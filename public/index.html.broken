@@ -1,0 +1,713 @@
+﻿<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>کلاس آنلاین - مدرسه هوشمند</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Tahoma, sans-serif; }
+        body { background: #1a1a2e; color: #eee; height: 100vh; display: flex; overflow: hidden; }
+        
+        .sidebar { width: 320px; background: #16213e; display: flex; flex-direction: column; padding: 15px; gap: 10px; }
+        .logo { text-align: center; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; font-size: 16pt; font-weight: bold; }
+        .room-info { background: #0f3460; padding: 10px; border-radius: 8px; text-align: center; font-size: 11pt; }
+        .room-id { color: #e94560; font-weight: bold; font-size: 14pt; margin-top: 5px; }
+        
+        .chat-box { flex: 1; background: #0f3460; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 5px; display: flex; flex-direction: column; gap: 5px; }
+        .chat-msg { background: #16213e; padding: 8px 12px; border-radius: 8px; font-size: 11pt; word-wrap: break-word; }
+        .chat-msg .user { color: #e94560; font-weight: bold; font-size: 10pt; }
+        .chat-msg .time { color: #666; font-size: 8pt; float: left; }
+        .chat-input { display: flex; gap: 5px; margin-top: 10px; }
+        .chat-input input { flex: 1; padding: 10px; border: none; border-radius: 20px; background: #16213e; color: white; font-size: 11pt; }
+        .chat-input button { padding: 10px 18px; background: #e94560; border: none; border-radius: 20px; color: white; cursor: pointer; font-size: 14pt; }
+        
+        .main { flex: 1; display: flex; flex-direction: column; padding: 15px; gap: 10px; }
+        .videos { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; overflow-y: auto; align-content: start; }
+        .video-container { background: #0f3460; border-radius: 12px; position: relative; min-height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center; aspect-ratio: 4/3; }
+        .video-container video { width: 100%; height: 100%; object-fit: cover; }
+        .user-label { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 20px; font-size: 10pt; }
+        .mic-status { position: absolute; top: 10px; left: 10px; font-size: 14pt; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 50%; }
+        
+        .controls { background: #16213e; padding: 12px; border-radius: 12px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 12px 20px; border: none; border-radius: 25px; cursor: pointer; font-size: 12pt; font-weight: bold; color: white; transition: all 0.3s; }
+        .btn:hover { transform: scale(1.05); }
+        .btn-mic { background: #4CAF50; }
+        .btn-mic.off { background: #f44336; }
+        .btn-cam { background: #4CAF50; }
+        .btn-cam.off { background: #f44336; }
+        .btn-hand { background: #FF9800; }
+        .btn-hand.raised { background: #f44336; }
+        .btn-leave { background: #f44336; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #16213e; padding: 40px; border-radius: 15px; width: 450px; max-width: 90%; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
+        .modal-content h1 { color: #e94560; margin-bottom: 25px; font-size: 22pt; }
+        .modal-content input, .modal-content select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #0f3460; border-radius: 8px; background: #0f3460; color: white; font-size: 13pt; font-family: Tahoma, sans-serif; }
+        .modal-content input:focus, .modal-content select:focus { outline: none; border-color: #e94560; }
+        .modal-content button { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-size: 15pt; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .modal-content button:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5); }
+        
+        .status-bar { background: #0f3460; padding: 8px; border-radius: 8px; text-align: center; font-size: 11pt; }
+        .status-online { color: #4CAF50; }
+        .status-offline { color: #f44336; }
+        
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: 40%; }
+            .main { height: 60%; }
+            .chat-messages { max-height: 100px; }
+            .videos { grid-template-columns: 1fr; }
+            .controls { padding: 8px; gap: 5px; }
+            .btn { padding: 10px 15px; font-size: 11pt; }
+        }
+
+        /* ═══ Whiteboard ═══ */
+        .whiteboard-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #1a1a2e;
+            display: none;
+            z-index: 9999;
+            flex-direction: column;
+        }
+        .whiteboard-modal.show { display: flex; }
+
+        .wb-header {
+            background: #16213e;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .wb-tools {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 10px;
+        }
+
+        .wb-tool {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            background: #16213e;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .wb-tool label { color: #eee; font-size: 10pt; }
+
+        .wb-color {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .wb-color:hover { transform: scale(1.2); }
+        .wb-color.active {
+            border-color: #e94560;
+            transform: scale(1.3);
+            box-shadow: 0 0 15px #e94560;
+        }
+
+        .wb-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #16213e;
+            color: white;
+            cursor: pointer;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        .wb-btn.active { background: #e94560; }
+        .wb-btn:hover { background: #e94560; }
+
+        .wb-canvas-container {
+            flex: 1;
+            background: white;
+            margin: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #whiteboardCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            display: block;
+            touch-action: none;
+        }
+
+        .wb-close {
+            padding: 8px 20px;
+            background: #f44336;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 12pt;
+            font-weight: bold;
+        }        
+    </style>
+</head>
+<body>
+
+<!-- ═══ Join Modal ═══ -->
+<div class="modal" id="joinModal">
+    <div class="modal-content">
+        <h1>🎓 کلاس آنلاین</h1>
+        <input type="text" id="inputRoomId" placeholder="کد اتاق" value="class-101">
+        <input type="text" id="inputUserName" placeholder="نام شما">
+        <select id="inputRole">
+            <option value="student">👨‍🎓 دانش‌آموز</option>
+            <option value="teacher">👨‍🏫 معلم</option>
+        </select>
+        <button onclick="joinRoom()">🚀 ورود به کلاس</button>
+    </div>
+</div>
+
+<!-- ═══ Sidebar ═══ -->
+<div class="sidebar" style="display:none;" id="sidebar">
+    <div class="logo">🎓 کلاس آنلاین</div>
+    <div class="room-info">
+        اتاق:
+        <div class="room-id" id="displayRoomId">---</div>
+        <div id="onlineCount">حاضر: 0</div>
+    </div>
+    <div class="chat-box">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="پیام..." onkeypress="if(event.key==='Enter')sendChat()">
+            <button onclick="sendChat()">📨</button>
+        </div>
+    </div>
+    <div class="status-bar">
+        وضعیت: <span id="connectionStatus" class="status-offline">قطع</span>
+    </div>
+</div>
+
+<!-- ═══ Main ═══ -->
+<div class="main" style="display:none;" id="mainArea">
+    <div class="videos" id="videosGrid">
+        <div class="video-container" id="localVideoContainer">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="user-label">🎥 شما</div>
+            <div class="mic-status" id="localMicStatus">🎤</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="btn btn-mic" id="btnMic" onclick="toggleMic()">🎤 میکروفن</button>
+        <button class="btn btn-cam" id="btnCam" onclick="toggleCam()">📹 دوربین</button>
+        <button class="btn btn-hand" id="btnHand" onclick="toggleHand()">✋ سوال</button>
+        <button class="btn" style="background: #9C27B0;" onclick="openWhiteboard()">🎨 تخته سفید</button>
+        <button class="btn" style="background: #FF5722;" id="btnScreen" onclick="toggleScreenShare()">🖥️ اشتراک صفحه</button>
+        <button class="btn btn-leave" onclick="leaveRoom()">🚪 خروج</button>
+    </div>
+</div>
+<!-- ⭐ main اینجا بسته شد — whiteboard بیرون از main است -->
+
+<!-- ═══ Whiteboard Modal ═══ -->
+<div class="whiteboard-modal" id="whiteboardModal">
+    <div class="wb-header">
+        <h2 style="color: #e94560;">🎨 تخته سفید</h2>
+        
+        <div class="wb-tools">
+            <button class="wb-btn active" id="toolPen" onclick="setTool('pen')">✏️ قلم</button>
+            <button class="wb-btn" id="toolEraser" onclick="setTool('eraser')">🧽 پاک‌کن</button>
+            
+            <div class="wb-tool">
+                <label>رنگ:</label>
+                <div class="wb-color active" style="background:#000000;" onclick="setColor('#000000', this)"></div>
+                <div class="wb-color" style="background:#f44336;" onclick="setColor('#f44336', this)"></div>
+                <div class="wb-color" style="background:#2196F3;" onclick="setColor('#2196F3', this)"></div>
+                <div class="wb-color" style="background:#4CAF50;" onclick="setColor('#4CAF50', this)"></div>
+                <div class="wb-color" style="background:#FF9800;" onclick="setColor('#FF9800', this)"></div>
+                <div class="wb-color" style="background:#9C27B0;" onclick="setColor('#9C27B0', this)"></div>
+                <div class="wb-color" style="background:#FFEB3B;" onclick="setColor('#FFEB3B', this)"></div>
+            </div>
+            
+            <div class="wb-tool">
+                <label>اندازه:</label>
+                <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setBrushSize(this.value)">
+                <span id="brushSizeLabel" style="color:white;font-size:10pt;">3</span>
+            </div>
+            
+            <button class="wb-btn" style="background:#f44336;" onclick="clearWhiteboard()">🗑️ پاک کردن همه</button>
+        </div>
+        
+        <button class="wb-close" onclick="closeWhiteboard()">❌ بستن</button>
+    </div>
+    
+    <div class="wb-canvas-container">
+        <canvas id="whiteboardCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+const WS_PROTOCOL = location.protocol === 'https:' ? 'wss' : 'ws';
+const WS_URL = `${WS_PROTOCOL}://${location.host}/ws`;
+
+const rtcConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+    ]
+};
+
+let ws = null;
+let localStream = null;
+let roomId = '';
+let userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+let userName = '';
+let userRole = 'student';
+let micOn = true;
+let camOn = true;
+let handRaised = false;
+let reconnectAttempts = 0;
+let intentionalClose = false;
+
+let peerConnections = {};
+let remoteStreams = {};
+let pendingCandidates = {};
+
+let screenStream = null;
+let screenSharing = false;
+
+// ═══════════════════════════════════════════
+//              ورود به کلاس
+// ═══════════════════════════════════════════
+async function joinRoom() {
+    roomId = document.getElementById('inputRoomId').value.trim();
+    userName = document.getElementById('inputUserName').value.trim();
+    userRole = document.getElementById('inputRole').value;
+    
+    if (!roomId || !userName) { alert('لطفاً همه فیلدها را پر کنید'); return; }
+    
+    document.getElementById('joinModal').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'flex';
+    document.getElementById('mainArea').style.display = 'flex';
+    document.getElementById('displayRoomId').textContent = roomId;
+    
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480, facingMode: 'user' },
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        document.getElementById('localVideo').srcObject = localStream;
+        console.log('✅ دوربین و میکروفن فعال شد');
+    } catch (e) {
+        console.error('❌ خطا:', e);
+        let msg = '⚠️ دسترسی به دوربین/میکروفن داده نشد\n\n';
+        if (e.name === 'NotAllowedError') msg += 'شما اجازه دسترسی نداده‌اید.';
+        else if (e.name === 'NotFoundError') msg += 'دوربین یا میکروفن یافت نشد.';
+        else msg += e.message;
+        alert(msg);
+    }
+    
+    connectWS();
+}
+
+// ═══════════════════════════════════════════
+//              WebSocket
+// ═══════════════════════════════════════════
+function connectWS() {
+    try {
+        ws = new WebSocket(WS_URL);
+        
+        ws.onopen = () => {
+            console.log('✅ WebSocket متصل شد');
+            document.getElementById('connectionStatus').textContent = 'آنلاین';
+            document.getElementById('connectionStatus').className = 'status-online';
+            
+            ws.send(JSON.stringify({
+                type: 'join', room_id: roomId, user_id: userId,
+                user_name: userName, role: userRole,
+            }));
+            
+            reconnectAttempts = 0;
+            addSystemMessage('✅ به کلاس متصل شدید');
+        };
+        
+        ws.onmessage = (event) => {
+            try { handleMessage(JSON.parse(event.data)); }
+            catch (e) { console.error('خطا در پردازش پیام:', e); }
+        };
+        
+        ws.onclose = () => {
+            console.log('❌ WebSocket قطع شد');
+            document.getElementById('connectionStatus').textContent = 'قطع';
+            document.getElementById('connectionStatus').className = 'status-offline';
+            if (!intentionalClose && reconnectAttempts < 5) {
+                reconnectAttempts++;
+                setTimeout(connectWS, 2000);
+            }
+        };
+        
+        ws.onerror = (e) => console.error('خطای WebSocket:', e);
+    } catch (e) { console.error('خطا در اتصال:', e); }
+}
+
+// ═══════════════════════════════════════════
+//              مدیریت پیام‌ها
+// ═══════════════════════════════════════════
+function handleMessage(data) {
+    switch (data.type) {
+        case 'room_info':
+            updateRoomInfo(data.data);
+            if (data.data) {
+                if (data.data.students) {
+                    data.data.students.forEach(s => {
+                        if (s.id !== userId) createPeerConnection(s.id, s.name);
+                    });
+                }
+                if (data.data.teacher && data.data.teacher.id !== userId) {
+                    createPeerConnection(data.data.teacher.id, data.data.teacher.name);
+                }
+            }
+            break;
+        case 'whiteboard':
+            handleWhiteboard(data.data);
+            break;
+        case 'user_joined':
+            addSystemMessage(`🔵 ${data.user_name} وارد کلاس شد`);
+            document.getElementById('onlineCount').textContent = `حاضر: ${data.online_count}`;
+            if (data.user_id !== userId) createPeerConnection(data.user_id, data.user_name);
+            break;
+        case 'user_left':
+            addSystemMessage(`🔴 ${data.user_name || 'کاربر'} خارج شد`);
+            removePeerConnection(data.user_id);
+            break;
+        case 'chat_message':
+            addChatMessage(data.user, data.message, data.time);
+            break;
+        case 'hand_raised':
+            addSystemMessage(`✋ ${data.user_name} سوال دارد`);
+            break;
+        case 'hand_lowered':
+            addSystemMessage(`✋ یک کاربر سوال خود را برداشت`);
+            break;
+        case 'signal':
+            handleSignal(data);
+            break;
+        case 'screen_share_started':
+            addSystemMessage(`🖥️ ${data.user_name} صفحه‌اش را به اشتراک گذاشت`);
+            break;
+        case 'screen_share_stopped':
+            addSystemMessage(`🖥️ ${data.user_name} اشتراک صفحه را قطع کرد`);
+            const c = document.getElementById(`screenShare_${data.user_name}`);
+            if (c) c.remove();
+            break;
+        case 'pong': break;
+    }
+}
+
+function updateRoomInfo(info) {
+    if (!info) return;
+    document.getElementById('onlineCount').textContent = `حاضر: ${info.online_count}`;
+    document.getElementById('chatMessages').innerHTML = '';
+    if (info.chat) info.chat.forEach(msg => addChatMessage(msg.user, msg.message, msg.time));
+}
+
+// ═══════════════════════════════════════════
+//              WebRTC
+// ═══════════════════════════════════════════
+async function createPeerConnection(peerId, peerName) {
+    if (peerConnections[peerId]) return peerConnections[peerId];
+    console.log(`🔄 ایجاد اتصال با ${peerName}`);
+    
+    const pc = new RTCPeerConnection(rtcConfig);
+    peerConnections[peerId] = pc;
+    pendingCandidates[peerId] = [];
+    
+    if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    }
+    
+    pc.ontrack = (event) => {
+        if (!remoteStreams[peerId]) remoteStreams[peerId] = new MediaStream();
+        event.streams[0].getTracks().forEach(track => remoteStreams[peerId].addTrack(track));
+        showRemoteVideo(peerId, peerName, remoteStreams[peerId]);
+    };
+    
+    pc.onicecandidate = (event) => {
+        if (event.candidate) sendSignal(peerId, { type: 'ice-candidate', candidate: event.candidate });
+    };
+    
+    pc.onconnectionstatechange = () => {
+        console.log(`Connection ${peerName}: ${pc.connectionState}`);
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+            removePeerConnection(peerId);
+        }
+    };
+    
+    const myNum = parseFloat(userId.split('_').pop()) || 0;
+    const peerNum = parseFloat(String(peerId).split('_').pop()) || 0;
+    
+    if (myNum > peerNum) {
+        try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendSignal(peerId, { type: 'offer', sdp: pc.localDescription });
+        } catch (e) { console.error('خطا در offer:', e); }
+    }
+    
+    return pc;
+}
+
+function removePeerConnection(peerId) {
+    if (peerConnections[peerId]) { peerConnections[peerId].close(); delete peerConnections[peerId]; }
+    if (remoteStreams[peerId]) { remoteStreams[peerId].getTracks().forEach(t => t.stop()); delete remoteStreams[peerId]; }
+    delete pendingCandidates[peerId];
+    const c = document.getElementById(`video_${peerId}`);
+    if (c) c.remove();
+}
+
+function sendSignal(targetId, data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'signal', target: targetId, data }));
+    }
+}
+
+async function handleSignal(data) {
+    const fromId = data.from;
+    let pc = peerConnections[fromId];
+    if (!pc) pc = await createPeerConnection(fromId, data.from_name);
+    
+    try {
+        if (data.data.type === 'offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.data.sdp));
+            if (pendingCandidates[fromId]) {
+                for (const cand of pendingCandidates[fromId]) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+                }
+                pendingCandidates[fromId] = [];
+            }
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendSignal(fromId, { type: 'answer', sdp: pc.localDescription });
+        } else if (data.data.type === 'answer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.data.sdp));
+            if (pendingCandidates[fromId]) {
+                for (const cand of pendingCandidates[fromId]) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+                }
+                pendingCandidates[fromId] = [];
+            }
+        } else if (data.data.type === 'ice-candidate') {
+            if (data.data.candidate) {
+                if (!pc.remoteDescription || !pc.remoteDescription.type) {
+                    pendingCandidates[fromId].push(data.data.candidate);
+                } else {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(data.data.candidate)); } catch (e) {}
+                }
+            }
+        }
+    } catch (e) { console.error('خطا در signal:', e); }
+}
+
+function showRemoteVideo(peerId, peerName, stream) {
+    let container = document.getElementById(`video_${peerId}`);
+    if (container) {
+        const video = container.querySelector('video');
+        if (video) video.srcObject = stream;
+        return;
+    }
+    container = document.createElement('div');
+    container.className = 'video-container';
+    container.id = `video_${peerId}`;
+    container.innerHTML = `<video autoplay playsinline></video><div class="user-label">👤 ${escapeHtml(peerName)}</div>`;
+    container.querySelector('video').srcObject = stream;
+    document.getElementById('videosGrid').appendChild(container);
+}
+
+// ═══════════════════════════════════════════
+//              چت
+// ═══════════════════════════════════════════
+function sendChat() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'chat', message }));
+    input.value = '';
+}
+
+function addChatMessage(user, message, time) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `<span class="user">${escapeHtml(user)}:</span><span class="time">${escapeHtml(time || '')}</span><br>${escapeHtml(message)}`;
+    container.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function addSystemMessage(message) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.style.cssText = 'background:#1a1a2e;color:#999;font-size:10pt;text-align:center;';
+    div.textContent = message;
+    container.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════
+//              میکروفن / دوربین / دست
+// ═══════════════════════════════════════════
+function toggleMic() {
+    micOn = !micOn;
+    if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+    const btn = document.getElementById('btnMic');
+    btn.textContent = micOn ? '🎤 میکروفن' : '🔇 قطع';
+    btn.classList.toggle('off', !micOn);
+    document.getElementById('localMicStatus').textContent = micOn ? '🎤' : '🔇';
+}
+
+function toggleCam() {
+    camOn = !camOn;
+    if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camOn);
+    const btn = document.getElementById('btnCam');
+    btn.textContent = camOn ? '📹 دوربین' : '📵 قطع';
+    btn.classList.toggle('off', !camOn);
+}
+
+function toggleHand() {
+    handRaised = !handRaised;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: handRaised ? 'hand_raise' : 'hand_lower' }));
+    }
+    const btn = document.getElementById('btnHand');
+    btn.classList.toggle('raised', handRaised);
+    btn.textContent = handRaised ? '✋ دست بالا' : '✋ سوال';
+}
+
+// ═══════════════════════════════════════════
+//              خروج
+// ═══════════════════════════════════════════
+function leaveRoom() {
+    if (!confirm('از کلاس خارج می‌شوید؟')) return;
+    intentionalClose = true;
+    if (screenSharing) stopScreenShare();
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    Object.keys(peerConnections).forEach(id => peerConnections[id].close());
+    if (ws) ws.close();
+    location.reload();
+}
+
+// ═══════════════════════════════════════════
+//              اشتراک صفحه
+// ═══════════════════════════════════════════
+async function toggleScreenShare() {
+    if (screenSharing) stopScreenShare();
+    else await startScreenShare();
+}
+
+async function startScreenShare() {
+    try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: 'always', frameRate: 15 },
+            audio: false
+        });
+        screenSharing = true;
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'screen_share_start' }));
+        }
+        
+        const btn = document.getElementById('btnScreen');
+        btn.textContent = '⏹️ توقف اشتراک';
+        btn.style.background = '#f44336';
+        
+        showScreenShare('خودت', screenStream, true);
+        
+        const screenTrack = screenStream.getVideoTracks()[0];
+        
+        for (const pc of Object.values(peerConnections)) {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) await sender.replaceTrack(screenTrack);
+        }
+        
+        screenTrack.onended = () => stopScreenShare();
+        addSystemMessage('🖥️ اشتراک صفحه شروع شد');
+    } catch (e) {
+        console.error('❌ خطا در اشتراک صفحه:', e);
+        screenSharing = false;
+        screenStream = null;
+        addSystemMessage(e.name === 'NotAllowedError' ? '⚠️ اشتراک صفحه لغو شد' : '⚠️ خطا: ' + e.message);
+    }
+}
+
+function stopScreenShare() {
+    if (!screenSharing) return;
+    if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+    screenSharing = false;
+    
+    const btn = document.getElementById('btnScreen');
+    btn.textContent = '🖥️ اشتراک صفحه';
+    btn.style.background = '#FF5722';
+    
+    if (localStream) {
+        const camTrack = localStream.getVideoTracks()[0];
+        for (const pc of Object.values(peerConnections)) {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender && camTrack) sender.replaceTrack(camTrack);
+        }
+    }
+    
+    const c = document.getElementById('screenShare_local');
+    if (c) c.remove();
+    
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'screen_share_stop' }));
+    }
+    addSystemMessage('🖥️ اشتراک صفحه متوقف شد');
+}
+
+function showScreenShare(userName, stream, isLocal) {
+    const containerId = `screenShare_${isLocal ? 'local' : userName.replace(/\s/g, '_')}`;
+    let container = document.getElementById(containerId);
+    if (container) container.remove();
+    
+    container = document.createElement('div');
+    container.className = 'video-container';
+    container.id = containerId;
+    container.style.cssText = 'grid-column:span 2;border:3px solid #FF5722;';
+    container.innerHTML = `<video autoplay playsinline ${isLocal ? 'muted' : ''}></video><div class="user-label">🖥️ ${escapeHtml(userName)} - اشتراک صفحه</div>`;
+    container.querySelector('video').srcObject = stream;
+    
+    const grid = document.getElementById('videosGrid');
+    grid.insertBefore(container, grid.firstChild);
+}
+
+// ═══════════════════════════════════════════
+//              تخته سفید (Whiteboard)
+// ═══════════════════════════════════════════
+let canvas = null;
+let ctx = null;
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+let currentColor = '#000000';
+let currentBrushSize = 3;
+let currentTool = 'pen';
+let whiteboardOpen = false;
+let whiteboardHistory = [];  // ذخیره تاریخچه رسم‌ها برای کاربران جدید
+
+function openWhiteboard() {
+    whiteboardOpen =

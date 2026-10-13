@@ -1,0 +1,1467 @@
+﻿<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>کلاس آنلاین v3.1 - مدرسه هوشمند</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Tahoma, sans-serif; }
+        body { background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
+        
+        /* ═══════════════════════════════════════════ */
+        /*              Join Modal                     */
+        /* ═══════════════════════════════════════════ */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .modal.hidden { display: none; }
+        .modal-content { background: #16213e; padding: 40px; border-radius: 15px; width: 450px; max-width: 90%; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
+        .modal-content h1 { color: #e94560; margin-bottom: 25px; font-size: 22pt; }
+        .modal-content input, .modal-content select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #0f3460; border-radius: 8px; background: #0f3460; color: white; font-size: 13pt; font-family: Tahoma, sans-serif; }
+        .modal-content input:focus, .modal-content select:focus { outline: none; border-color: #e94560; }
+        .modal-content button { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-size: 15pt; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .modal-content button:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5); }
+
+        /* ═══════════════════════════════════════════ */
+        /*              App Layout                     */
+        /* ═══════════════════════════════════════════ */
+        #app { display: none; flex-direction: column; height: 100vh; width: 100vw; }
+        #app.visible { display: flex; }
+        
+        /* ─── Top Bar ─── */
+        .top-bar {
+            background: #16213e;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0f3460;
+            height: 50px;
+            flex-shrink: 0;
+        }
+        .top-bar .left, .top-bar .center, .top-bar .right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .mode-indicator {
+            background: #0f3460;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .mode-indicator.whiteboard { color: #9C27B0; }
+        .mode-indicator.screen { color: #FF5722; }
+        .mode-indicator.camera { color: #2196F3; }
+        .room-badge { color: #e94560; font-weight: bold; font-size: 11pt; }
+        .online-badge { color: #4CAF50; font-size: 11pt; }
+        .connection-status { font-size: 10pt; }
+        .connection-status.online { color: #4CAF50; }
+        .connection-status.offline { color: #f44336; }
+        
+        /* ─── Main Content ─── */
+        .content-area {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+            position: relative;
+        }
+        
+        .main-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            min-width: 0;
+            position: relative;
+        }
+        
+        /* ─── Views (Grid/Camera/Whiteboard/Screen) ─── */
+        .view { display: none; width: 100%; height: 100%; }
+        .view.active { display: flex; flex-direction: column; }
+        
+        /* Grid View */
+        #gridView .videos-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            align-content: start;
+        }
+        
+        /* Video Container */
+        .video-container {
+            background: #0f3460;
+            border-radius: 12px;
+            position: relative;
+            min-height: 180px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 4/3;
+        }
+        .video-container video { width: 100%; height: 100%; object-fit: cover; }
+        .user-label { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.75); padding: 5px 12px; border-radius: 20px; font-size: 10pt; }
+        .user-label.teacher { background: #e94560; }
+        .user-label.hand-raised { background: #FF9800; animation: pulse 1s infinite; }
+        .mic-status { position: absolute; top: 10px; left: 10px; font-size: 12pt; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 50%; }
+        .hand-indicator { position: absolute; top: 10px; right: 10px; font-size: 24pt; animation: wave 1s infinite; }
+        
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes wave { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+        
+        /* Camera View (فقط معلم) */
+        #cameraView {
+            align-items: center;
+            justify-content: center;
+            background: #0f3460;
+            border-radius: 12px;
+        }
+        #cameraView .camera-box {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        #cameraView video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        
+        /* Screen View */
+        #screenView {
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            border-radius: 12px;
+        }
+        #screenView .screen-box {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #screenView video { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* Whiteboard View */
+        #whiteboardView {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        #whiteboardView .wb-tools-bar {
+            background: #16213e;
+            padding: 8px 15px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #0f3460;
+        }
+        #whiteboardView .wb-canvas-wrap {
+            flex: 1;
+            position: relative;
+            background: white;
+        }
+        #whiteboardCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            display: block;
+            touch-action: none;
+        }
+        .wb-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #0f3460;
+            color: white;
+            cursor: pointer;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        .wb-btn.active { background: #e94560; }
+        .wb-btn:hover { background: #e94560; }
+        .wb-color {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .wb-color:hover { transform: scale(1.15); }
+        .wb-color.active { border-color: #e94560; transform: scale(1.25); box-shadow: 0 0 12px #e94560; }
+        .wb-size-range { width: 100px; }
+        
+        /* ─── Chat Panel (کنار) ─── */
+        .chat-panel {
+            width: 300px;
+            background: #16213e;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #0f3460;
+            flex-shrink: 0;
+        }
+        .chat-panel.hidden { display: none; }
+        .chat-header { padding: 10px 15px; background: #0f3460; font-weight: bold; color: #e94560; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+        .chat-msg { background: #0f3460; padding: 8px 12px; border-radius: 8px; font-size: 10pt; word-wrap: break-word; }
+        .chat-msg .user { color: #e94560; font-weight: bold; font-size: 9pt; }
+        .chat-msg .time { color: #666; font-size: 8pt; float: left; }
+        .chat-msg.system { background: #0a0f1f; color: #888; font-size: 9pt; text-align: center; }
+        .chat-input { display: flex; gap: 5px; padding: 10px; border-top: 2px solid #0f3460; }
+        .chat-input input { flex: 1; padding: 10px; border: none; border-radius: 20px; background: #0f3460; color: white; font-size: 10pt; }
+        .chat-input button { padding: 8px 15px; background: #e94560; border: none; border-radius: 20px; color: white; cursor: pointer; font-size: 14pt; }
+        
+        /* ─── Participants Bar (پایین) ─── */
+        .participants-bar {
+            background: #0f3460;
+            padding: 8px 15px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            flex-shrink: 0;
+            height: 50px;
+            align-items: center;
+        }
+        .participant-chip {
+            background: #16213e;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 10pt;
+            white-space: nowrap;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .participant-chip.teacher { background: #e94560; }
+        .participant-chip .role-icon { font-size: 11pt; }
+        
+        /* ─── Controls Bar ─── */
+        .controls-bar {
+            background: #16213e;
+            padding: 10px 15px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            border-top: 2px solid #0f3460;
+            flex-shrink: 0;
+        }
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 22px;
+            cursor: pointer;
+            font-size: 11pt;
+            font-weight: bold;
+            color: white;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn:disabled:hover { transform: none; }
+        .btn-mic { background: #4CAF50; }
+        .btn-mic.off { background: #f44336; }
+        .btn-cam { background: #4CAF50; }
+        .btn-cam.off { background: #f44336; }
+        .btn-hand { background: #FF9800; }
+        .btn-hand.raised { background: #f44336; }
+        .btn-leave { background: #f44336; }
+        .btn-wb { background: #9C27B0; }
+        .btn-screen { background: #FF5722; }
+        .btn-mode { background: #0f3460; border: 2px solid #1e3a5f; }
+        .btn-mode.active { background: #667eea; }
+        
+        .mode-group { display: flex; gap: 5px; padding: 5px; background: #0f3460; border-radius: 25px; }
+        .mode-group.hidden { display: none; }
+        
+        /* ─── Responsive ─── */
+        @media (max-width: 900px) {
+            .chat-panel { width: 260px; }
+            .top-bar .center { display: none; }
+        }
+        @media (max-width: 600px) {
+            .chat-panel { position: absolute; right: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(100%); transition: transform 0.3s; }
+            .chat-panel.mobile-open { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              Join Modal                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="modal" id="joinModal">
+    <div class="modal-content">
+        <h1>🎓 کلاس آنلاین</h1>
+        <input type="text" id="inputRoomId" placeholder="کد اتاق" value="class-101">
+        <input type="text" id="inputUserName" placeholder="نام شما">
+        <select id="inputRole">
+            <option value="student">👨‍🎓 دانش‌آموز</option>
+            <option value="teacher">👨‍🏫 معلم</option>
+        </select>
+        <button onclick="joinRoom()">🚀 ورود به کلاس</button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              App                            -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="app">
+
+    <!-- ─── Top Bar ─── -->
+    <header class="top-bar">
+        <div class="left">
+            <div class="mode-indicator" id="modeIndicator">🎬 Grid</div>
+        </div>
+        <div class="center">
+            <span class="room-badge">اتاق: <span id="displayRoomId">---</span></span>
+        </div>
+        <div class="right">
+            <span class="online-badge">👥 <span id="onlineCount">0</span></span>
+            <span class="connection-status offline" id="connectionStatus">قطع</span>
+        </div>
+    </header>
+
+    <!-- ─── Content Area ─── -->
+    <div class="content-area">
+
+        <!-- ─── Main Stage ─── -->
+        <main class="main-stage" id="mainStage">
+
+            <!-- ─── Grid View ─── -->
+            <div id="gridView" class="view active">
+                <div class="videos-grid" id="videosGrid">
+                    <div class="video-container" id="localVideoContainer">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                        <div class="user-label" id="localLabel">🎥 شما</div>
+                        <div class="mic-status" id="localMicStatus">🎤</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── Camera View ─── -->
+            <div id="cameraView" class="view">
+                <div class="camera-box" id="cameraBox">
+                    <video id="cameraViewVideo" autoplay playsinline></video>
+                    <div class="user-label teacher" id="cameraViewLabel">👤 معلم</div>
+                </div>
+            </div>
+
+            <!-- ─── Screen View ─── -->
+            <div id="screenView" class="view">
+                <div class="screen-box">
+                    <video id="screenViewVideo" autoplay playsinline></video>
+                    <div class="user-label" style="background:#FF5722;">🖥️ اشتراک صفحه</div>
+                </div>
+            </div>
+
+            <!-- ─── Whiteboard View ─── -->
+            <div id="whiteboardView" class="view">
+                <div class="wb-tools-bar" id="wbToolsBar">
+                    <button class="wb-btn active" id="toolPen" onclick="setTool('pen')">✏️ قلم</button>
+                    <button class="wb-btn" id="toolEraser" onclick="setTool('eraser')">🧽 پاک‌کن</button>
+                    <button class="wb-btn" id="toolText" onclick="setTool('text')">🅰️ متن</button>
+                    
+                    <span style="color:#999;margin:0 5px;">|</span>
+                    <div class="wb-color active" style="background:#000000;" onclick="setColor('#000000', this)"></div>
+                    <div class="wb-color" style="background:#f44336;" onclick="setColor('#f44336', this)"></div>
+                    <div class="wb-color" style="background:#2196F3;" onclick="setColor('#2196F3', this)"></div>
+                    <div class="wb-color" style="background:#4CAF50;" onclick="setColor('#4CAF50', this)"></div>
+                    <div class="wb-color" style="background:#FF9800;" onclick="setColor('#FF9800', this)"></div>
+                    <div class="wb-color" style="background:#9C27B0;" onclick="setColor('#9C27B0', this)"></div>
+                    <div class="wb-color" style="background:#FFEB3B;" onclick="setColor('#FFEB3B', this)"></div>
+                    
+                    <span style="color:#999;margin:0 5px;">|</span>
+                    <label style="color:#eee;font-size:10pt;">اندازه:</label>
+                    <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setBrushSize(this.value)" class="wb-size-range">
+                    <span id="brushSizeLabel" style="color:white;font-size:10pt;width:20px;">3</span>
+                    
+                    <span style="color:#999;margin:0 5px;">|</span>
+                    <button class="wb-btn" style="background:#f44336;" onclick="clearWhiteboard()">🗑️ پاک کردن</button>
+                    
+                    <!-- فقط معلم: کنترل اجازه رسم -->
+                    <span class="teacher-only" style="margin-right:auto;display:flex;gap:5px;align-items:center;">
+                        <label style="color:#eee;font-size:10pt;">اجازه رسم:</label>
+                        <select id="drawPermission" onchange="setDrawPermission(this.value)" style="padding:5px;border-radius:5px;background:#0f3460;color:white;border:none;">
+                            <option value="teacher">فقط معلم</option>
+                            <option value="all">همه</option>
+                            <option value="none">هیچ‌کس</option>
+                        </select>
+                    </span>
+                </div>
+                <div class="wb-canvas-wrap">
+                    <canvas id="whiteboardCanvas"></canvas>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ─── Chat Panel ─── -->
+        <aside class="chat-panel" id="chatPanel">
+            <div class="chat-header">💬 چت کلاس</div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="پیام..." onkeypress="if(event.key==='Enter')sendChat()">
+                <button onclick="sendChat()">📨</button>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- ─── Participants Bar ─── -->
+    <div class="participants-bar" id="participantsBar">
+        <!-- پر می‌شود توسط JS -->
+    </div>
+
+    <!-- ─── Controls Bar ─── -->
+    <div class="controls-bar">
+        <button class="btn btn-mic" id="btnMic" onclick="toggleMic()">🎤 میکروفن</button>
+        <button class="btn btn-cam" id="btnCam" onclick="toggleCam()">📹 دوربین</button>
+        <button class="btn btn-hand" id="btnHand" onclick="toggleHand()">✋ سوال</button>
+        <button class="btn btn-wb" id="btnWhiteboard" onclick="toggleWhiteboard()">🎨 تخته سفید</button>
+        <button class="btn btn-screen" id="btnScreen" onclick="toggleScreenShare()">🖥️ اشتراک صفحه</button>
+        <button class="btn btn-leave" onclick="leaveRoom()">🚪 خروج</button>
+        
+        <!-- حالت‌ها (فقط معلم) -->
+        <div class="mode-group teacher-only" id="modeGroup">
+            <button class="btn btn-mode" data-mode="grid" onclick="setMode('grid')">🎬 Grid</button>
+            <button class="btn btn-mode" data-mode="camera" onclick="setMode('camera')">📹 معلم</button>
+            <button class="btn btn-mode" data-mode="whiteboard" onclick="setMode('whiteboard')">🎨 تخته</button>
+            <button class="btn btn-mode" data-mode="screen" onclick="setMode('screen')">🖥️ صفحه</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+// ═══════════════════════════════════════════
+//              Configuration
+// ═══════════════════════════════════════════
+const WS_PROTOCOL = location.protocol === 'https:' ? 'wss' : 'ws';
+const WS_URL = `${WS_PROTOCOL}://${location.host}/ws`;
+
+const rtcConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+// ═══════════════════════════════════════════
+//              Global State
+// ═══════════════════════════════════════════
+let ws = null;
+let localStream = null;
+let roomId = '';
+let userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+let userName = '';
+let userRole = 'student';
+let micOn = true;
+let camOn = true;
+let handRaised = false;
+let reconnectAttempts = 0;
+let intentionalClose = false;
+
+let peerConnections = {};
+let remoteStreams = {};
+let pendingCandidates = {};
+let remoteNames = {};   // peerId → name
+let remoteRoles = {};   // peerId → role
+
+let screenStream = null;
+let screenSharing = false;
+let currentMode = 'grid';
+
+let roomMembers = [];       // [{id, name, role}]
+let allowedDrawers = 'teacher';  // teacher | all | none
+
+// Whiteboard
+let canvas = null;
+let ctx = null;
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+let currentColor = '#000000';
+let currentBrushSize = 3;
+let currentTool = 'pen';  // pen | eraser | text
+let whiteboardHistory = [];
+let pendingTextInput = null;
+
+// ═══════════════════════════════════════════
+//              ورود به کلاس
+// ═══════════════════════════════════════════
+async function joinRoom() {
+    roomId = document.getElementById('inputRoomId').value.trim();
+    userName = document.getElementById('inputUserName').value.trim();
+    userRole = document.getElementById('inputRole').value;
+    
+    if (!roomId || !userName) { alert('لطفاً همه فیلدها را پر کنید'); return; }
+    
+    document.getElementById('joinModal').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('displayRoomId').textContent = roomId;
+    
+    // نمایش/مخفی کردن عناصر مخصوص معلم
+    document.querySelectorAll('.teacher-only').forEach(el => {
+        el.style.display = (userRole === 'teacher') ? '' : 'none';
+    });
+    
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480, facingMode: 'user' },
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        document.getElementById('localVideo').srcObject = localStream;
+        document.getElementById('localLabel').textContent = `🎥 ${escapeHtml(userName)} (شما)`;
+        document.getElementById('localLabel').className = userRole === 'teacher' ? 'user-label teacher' : 'user-label';
+        console.log('✅ دوربین و میکروفن فعال شد');
+    } catch (e) {
+        console.error('❌ خطا:', e);
+        let msg = '⚠️ دسترسی به دوربین/میکروفن داده نشد\n\n';
+        if (e.name === 'NotAllowedError') msg += 'شما اجازه دسترسی نداده‌اید.';
+        else if (e.name === 'NotFoundError') msg += 'دوربین یا میکروفن یافت نشد.';
+        else msg += e.message;
+        alert(msg);
+    }
+    
+    connectWS();
+}
+
+// ═══════════════════════════════════════════
+//              WebSocket
+// ═══════════════════════════════════════════
+function connectWS() {
+    try {
+        ws = new WebSocket(WS_URL);
+        
+        ws.onopen = () => {
+            console.log('✅ WebSocket متصل شد');
+            document.getElementById('connectionStatus').textContent = 'آنلاین';
+            document.getElementById('connectionStatus').className = 'connection-status online';
+            
+            ws.send(JSON.stringify({
+                type: 'join', room_id: roomId, user_id: userId,
+                user_name: userName, role: userRole
+            }));
+            
+            reconnectAttempts = 0;
+            addSystemMessage('✅ به کلاس متصل شدید');
+        };
+        
+        ws.onmessage = (event) => {
+            try { handleMessage(JSON.parse(event.data)); }
+            catch (e) { console.error('خطا در پردازش پیام:', e); }
+        };
+        
+        ws.onclose = () => {
+            console.log('❌ WebSocket قطع شد');
+            document.getElementById('connectionStatus').textContent = 'قطع';
+            document.getElementById('connectionStatus').className = 'connection-status offline';
+            if (!intentionalClose && reconnectAttempts < 5) {
+                reconnectAttempts++;
+                setTimeout(connectWS, 2000);
+            }
+        };
+        
+        ws.onerror = (e) => console.error('خطای WebSocket:', e);
+    } catch (e) { console.error('خطا در اتصال:', e); }
+}
+
+// ═══════════════════════════════════════════
+//              Message Handler
+// ═══════════════════════════════════════════
+function handleMessage(data) {
+    switch (data.type) {
+        case 'room_info':
+            if (data.data) {
+                if (data.data.students) {
+                    data.data.students.forEach(s => {
+                        remoteNames[s.id] = s.name;
+                        if (s.id !== userId) createPeerConnection(s.id, s.name);
+                    });
+                }
+                if (data.data.teacher && data.data.teacher.id !== userId) {
+                    remoteNames[data.data.teacher.id] = data.data.teacher.name;
+                    remoteRoles[data.data.teacher.id] = 'teacher';
+                    createPeerConnection(data.data.teacher.id, data.data.teacher.name);
+                }
+                if (data.data.members) {
+                    roomMembers = data.data.members;
+                    updateParticipantsBar();
+                }
+                if (data.data.currentMode) {
+                    currentMode = data.data.currentMode;
+                    applyMode(currentMode);
+                }
+                if (data.data.allowedDrawers) {
+                    allowedDrawers = data.data.allowedDrawers;
+                    updateDrawPermissionUI();
+                }
+                document.getElementById('onlineCount').textContent = data.data.online_count || 0;
+            }
+            break;
+            
+        case 'whiteboard':
+            handleWhiteboard(data.data);
+            break;
+            
+        case 'user_joined':
+            addSystemMessage(`🔵 ${data.user_name} وارد کلاس شد`);
+            document.getElementById('onlineCount').textContent = data.online_count;
+            remoteNames[data.user_id] = data.user_name;
+            if (data.role) remoteRoles[data.user_id] = data.role;
+            if (data.user_id !== userId) createPeerConnection(data.user_id, data.user_name);
+            break;
+            
+        case 'user_left':
+            addSystemMessage(`🔴 ${data.user_name || 'کاربر'} خارج شد`);
+            removePeerConnection(data.user_id);
+            delete remoteNames[data.user_id];
+            delete remoteRoles[data.user_id];
+            break;
+            
+        case 'members_update':
+            roomMembers = data.members || [];
+            document.getElementById('onlineCount').textContent = data.online_count || roomMembers.length;
+            updateParticipantsBar();
+            break;
+            
+        case 'chat_message':
+            addChatMessage(data.user, data.message, data.time);
+            break;
+            
+        case 'hand_raised':
+            addSystemMessage(`✋ ${data.user_name} سوال دارد`);
+            highlightHandRaised(data.user_name);
+            break;
+            
+        case 'hand_lowered':
+            addSystemMessage(`✋ یک کاربر سوال خود را برداشت`);
+            removeHandHighlights();
+            break;
+            
+        case 'signal':
+            handleSignal(data);
+            break;
+            
+        case 'mode_changed':
+            currentMode = data.mode;
+            applyMode(currentMode);
+            addSystemMessage(`🎬 حالت به "${modeNames[data.mode]}" تغییر کرد`);
+            break;
+            
+        case 'draw_permission_changed':
+            allowedDrawers = data.value;
+            updateDrawPermissionUI();
+            addSystemMessage(`✏️ اجازه رسم: ${permissionNames[data.value]}`);
+            break;
+            
+        case 'screen_share_started':
+            addSystemMessage(`🖥️ ${data.user_name} صفحه‌اش را به اشتراک گذاشت`);
+            break;
+            
+        case 'screen_share_stopped':
+            addSystemMessage(`🖥️ ${data.user_name} اشتراک صفحه را قطع کرد`);
+            break;
+            
+        case 'pong':
+            break;
+    }
+}
+
+const modeNames = {
+    'grid': 'Grid',
+    'camera': 'دوربین معلم',
+    'whiteboard': 'تخته سفید',
+    'screen': 'اشتراک صفحه'
+};
+
+const permissionNames = {
+    'teacher': 'فقط معلم',
+    'all': 'همه',
+    'none': 'هیچ‌کس'
+};
+
+// ═══════════════════════════════════════════
+//              WebRTC
+// ═══════════════════════════════════════════
+async function createPeerConnection(peerId, peerName) {
+    if (peerConnections[peerId]) return peerConnections[peerId];
+    console.log(`🔄 ایجاد اتصال با ${peerName}`);
+    
+    const pc = new RTCPeerConnection(rtcConfig);
+    peerConnections[peerId] = pc;
+    pendingCandidates[peerId] = [];
+    
+    if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    }
+    
+    pc.ontrack = (event) => {
+        if (!remoteStreams[peerId]) remoteStreams[peerId] = new MediaStream();
+        event.streams[0].getTracks().forEach(track => remoteStreams[peerId].addTrack(track));
+        showRemoteVideo(peerId, remoteNames[peerId] || peerName, remoteStreams[peerId]);
+    };
+    
+    pc.onicecandidate = (event) => {
+        if (event.candidate) sendSignal(peerId, { type: 'ice-candidate', candidate: event.candidate });
+    };
+    
+    pc.onconnectionstatechange = () => {
+        console.log(`Connection ${peerName}: ${pc.connectionState}`);
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+            removePeerConnection(peerId);
+        }
+    };
+    
+    const myNum = parseFloat(userId.split('_').pop()) || 0;
+    const peerNum = parseFloat(String(peerId).split('_').pop()) || 0;
+    
+    if (myNum > peerNum) {
+        try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendSignal(peerId, { type: 'offer', sdp: pc.localDescription });
+        } catch (e) { console.error('خطا در offer:', e); }
+    }
+    
+    return pc;
+}
+
+function removePeerConnection(peerId) {
+    if (peerConnections[peerId]) { peerConnections[peerId].close(); delete peerConnections[peerId]; }
+    if (remoteStreams[peerId]) { remoteStreams[peerId].getTracks().forEach(t => t.stop()); delete remoteStreams[peerId]; }
+    delete pendingCandidates[peerId];
+    const c = document.getElementById(`video_${peerId}`);
+    if (c) c.remove();
+    updateParticipantsBar();
+}
+
+function sendSignal(targetId, data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'signal', target: targetId, data }));
+    }
+}
+
+async function handleSignal(data) {
+    const fromId = data.from;
+    let pc = peerConnections[fromId];
+    if (!pc) pc = await createPeerConnection(fromId, data.from_name);
+    
+    try {
+        if (data.data.type === 'offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.data.sdp));
+            if (pendingCandidates[fromId]) {
+                for (const cand of pendingCandidates[fromId]) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+                }
+                pendingCandidates[fromId] = [];
+            }
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendSignal(fromId, { type: 'answer', sdp: pc.localDescription });
+        } else if (data.data.type === 'answer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.data.sdp));
+            if (pendingCandidates[fromId]) {
+                for (const cand of pendingCandidates[fromId]) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+                }
+                pendingCandidates[fromId] = [];
+            }
+        } else if (data.data.type === 'ice-candidate') {
+            if (data.data.candidate) {
+                if (!pc.remoteDescription || !pc.remoteDescription.type) {
+                    pendingCandidates[fromId].push(data.data.candidate);
+                } else {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(data.data.candidate)); } catch (e) {}
+                }
+            }
+        }
+    } catch (e) { console.error('خطا در signal:', e); }
+}
+
+function showRemoteVideo(peerId, peerName, stream) {
+    // برای grid view
+    let container = document.getElementById(`video_${peerId}`);
+    if (container) {
+        const video = container.querySelector('video');
+        if (video) video.srcObject = stream;
+    } else {
+        container = document.createElement('div');
+        container.className = 'video-container';
+        container.id = `video_${peerId}`;
+        const roleIcon = remoteRoles[peerId] === 'teacher' ? '👨‍🏫' : '👤';
+        const labelClass = remoteRoles[peerId] === 'teacher' ? 'user-label teacher' : 'user-label';
+        container.innerHTML = `
+            <video autoplay playsinline></video>
+            <div class="${labelClass}">${roleIcon} ${escapeHtml(peerName)}</div>
+        `;
+        container.querySelector('video').srcObject = stream;
+        document.getElementById('videosGrid').appendChild(container);
+    }
+    
+    // برای camera view (اگر معلم است و mode = camera)
+    if (remoteRoles[peerId] === 'teacher') {
+        const camVideo = document.getElementById('cameraViewVideo');
+        if (camVideo) camVideo.srcObject = stream;
+        const camLabel = document.getElementById('cameraViewLabel');
+        if (camLabel) camLabel.textContent = `👨‍🏫 ${escapeHtml(peerName)}`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//              Mode Management
+// ═══════════════════════════════════════════
+function setMode(mode) {
+    if (userRole !== 'teacher') return;
+    if (!['grid', 'camera', 'whiteboard', 'screen'].includes(mode)) return;
+    
+    currentMode = mode;
+    applyMode(mode);
+    
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'set_mode', mode }));
+    }
+}
+
+function applyMode(mode) {
+    // مخفی کردن همه viewها
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    
+    // نمایش view انتخابی
+    let viewId = '';
+    switch(mode) {
+        case 'grid': viewId = 'gridView'; break;
+        case 'camera': viewId = 'cameraView'; break;
+        case 'whiteboard': viewId = 'whiteboardView'; break;
+        case 'screen': viewId = 'screenView'; break;
+    }
+    const viewEl = document.getElementById(viewId);
+    if (viewEl) viewEl.classList.add('active');
+    
+    // به‌روزرسانی indicator
+    const indicator = document.getElementById('modeIndicator');
+    const icons = { 'grid': '🎬', 'camera': '📹', 'whiteboard': '🎨', 'screen': '🖥️' };
+    indicator.textContent = `${icons[mode]} ${modeNames[mode]}`;
+    indicator.className = 'mode-indicator ' + mode;
+    
+    // به‌روزرسانی دکمه‌های mode (برای معلم)
+    document.querySelectorAll('.btn-mode').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    
+    // فعال‌سازی canvas در whiteboard mode
+    if (mode === 'whiteboard') {
+        setTimeout(() => {
+            if (canvas) {
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                if (ctx) {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    replayHistory();
+                }
+            }
+        }, 100);
+    }
+    
+    // اگر در حالت screen یا camera هستیم و معلم است، استریم خودمان را بگیر
+    if (mode === 'camera' && userRole === 'teacher' && localStream) {
+        document.getElementById('cameraViewVideo').srcObject = localStream;
+        document.getElementById('cameraViewLabel').textContent = `👨‍🏫 ${escapeHtml(userName)} (شما)`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//              Participants Bar
+// ═══════════════════════════════════════════
+function updateParticipantsBar() {
+    const bar = document.getElementById('participantsBar');
+    if (!bar) return;
+    bar.innerHTML = '';
+    
+    roomMembers.forEach(m => {
+        const chip = document.createElement('div');
+        chip.className = 'participant-chip' + (m.role === 'teacher' ? ' teacher' : '');
+        chip.innerHTML = `
+            <span class="role-icon">${m.role === 'teacher' ? '👨‍🏫' : '👨‍🎓'}</span>
+            <span>${escapeHtml(m.name)}${m.id === userId ? ' (شما)' : ''}</span>
+        `;
+        bar.appendChild(chip);
+    });
+}
+
+// ═══════════════════════════════════════════
+//              Draw Permission
+// ═══════════════════════════════════════════
+function setDrawPermission(value) {
+    if (userRole !== 'teacher') return;
+    if (!['teacher', 'all', 'none'].includes(value)) return;
+    
+    allowedDrawers = value;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'set_draw_permission', value }));
+    }
+    updateDrawPermissionUI();
+}
+
+function updateDrawPermissionUI() {
+    const select = document.getElementById('drawPermission');
+    if (select) select.value = allowedDrawers;
+    
+    // چک کن آیا می‌توانیم رسم کنیم
+    const canDraw = allowedDrawers === 'all' || userRole === 'teacher';
+    const toolsBar = document.getElementById('wbToolsBar');
+    if (toolsBar) {
+        toolsBar.style.opacity = canDraw ? '1' : '0.5';
+        toolsBar.style.pointerEvents = canDraw ? 'auto' : 'none';
+    }
+    
+    // پیام به دانش‌آموزان
+    if (!canDraw && userRole === 'student') {
+        // می‌توانیم یک نشانگر اضافه کنیم
+    }
+}
+
+// ═══════════════════════════════════════════
+//              Chat
+// ═══════════════════════════════════════════
+function sendChat() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'chat', message }));
+    input.value = '';
+}
+
+function addChatMessage(user, message, time) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `<span class="user">${escapeHtml(user)}:</span> <span class="time">${escapeHtml(time || '')}</span><br>${escapeHtml(message)}`;
+    container.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function addSystemMessage(message) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg system';
+    div.textContent = message;
+    container.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════
+//              Mic / Cam / Hand
+// ═══════════════════════════════════════════
+function toggleMic() {
+    micOn = !micOn;
+    if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+    const btn = document.getElementById('btnMic');
+    btn.textContent = micOn ? '🎤 میکروفن' : '🔇 قطع';
+    btn.classList.toggle('off', !micOn);
+    document.getElementById('localMicStatus').textContent = micOn ? '🎤' : '🔇';
+}
+
+function toggleCam() {
+    camOn = !camOn;
+    if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camOn);
+    const btn = document.getElementById('btnCam');
+    btn.textContent = camOn ? '📹 دوربین' : '📵 قطع';
+    btn.classList.toggle('off', !camOn);
+}
+
+function toggleHand() {
+    handRaised = !handRaised;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: handRaised ? 'hand_raise' : 'hand_lower' }));
+    }
+    const btn = document.getElementById('btnHand');
+    btn.classList.toggle('raised', handRaised);
+    btn.textContent = handRaised ? '✋ دست بالا' : '✋ سوال';
+    
+    // نشانگر محلی
+    const localLabel = document.getElementById('localLabel');
+    if (localLabel) localLabel.classList.toggle('hand-raised', handRaised);
+}
+
+function highlightHandRaised(userName) {
+    // پیدا کردن کادر کاربر و افزودن نشانگر
+    const labels = document.querySelectorAll('.user-label');
+    labels.forEach(label => {
+        if (label.textContent.includes(userName)) {
+            label.classList.add('hand-raised');
+            const parent = label.parentElement;
+            if (!parent.querySelector('.hand-indicator')) {
+                const hand = document.createElement('div');
+                hand.className = 'hand-indicator';
+                hand.textContent = '✋';
+                parent.appendChild(hand);
+            }
+        }
+    });
+}
+
+function removeHandHighlights() {
+    document.querySelectorAll('.user-label.hand-raised').forEach(l => l.classList.remove('hand-raised'));
+    document.querySelectorAll('.hand-indicator').forEach(h => h.remove());
+}
+
+// ═══════════════════════════════════════════
+//              Whiteboard Toggle
+// ═══════════════════════════════════════════
+function toggleWhiteboard() {
+    if (currentMode === 'whiteboard') {
+        // اگر معلم است، برگرد به grid
+        if (userRole === 'teacher') setMode('grid');
+    } else {
+        // اگر معلم است، حالت را به whiteboard تغییر بده
+        if (userRole === 'teacher') {
+            setMode('whiteboard');
+        } else {
+            // دانش‌آموز: فقط می‌تواند تخته را ببیند (اگر معلم فعال کرده)
+            // یا پیام بدهد که می‌خواهد تخته باز شود
+            addSystemMessage('⚠️ فقط معلم می‌تواند حالت تخته سفید را فعال کند');
+        }
+    }
+}
+
+// ═══════════════════════════════════════════
+//              Screen Share
+// ═══════════════════════════════════════════
+async function toggleScreenShare() {
+    if (screenSharing) stopScreenShare();
+    else await startScreenShare();
+}
+
+async function startScreenShare() {
+    if (userRole !== 'teacher') {
+        addSystemMessage('⚠️ فقط معلم می‌تواند صفحه را به اشتراک بگذارد');
+        return;
+    }
+    
+    try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: 'always', frameRate: 15 },
+            audio: false
+        });
+        screenSharing = true;
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'screen_share_start' }));
+        }
+        
+        const btn = document.getElementById('btnScreen');
+        btn.textContent = '⏹️ توقف اشتراک';
+        btn.style.background = '#f44336';
+        
+        const screenTrack = screenStream.getVideoTracks()[0];
+        
+        // ارسال به همه peerها
+        for (const pc of Object.values(peerConnections)) {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) await sender.replaceTrack(screenTrack);
+        }
+        
+        // نمایش در حالت screen (برای خودمان)
+        document.getElementById('screenViewVideo').srcObject = screenStream;
+        
+        // تغییر حالت به screen
+        setMode('screen');
+        
+        screenTrack.onended = () => stopScreenShare();
+        addSystemMessage('🖥️ اشتراک صفحه شروع شد');
+    } catch (e) {
+        console.error('❌ خطا در اشتراک صفحه:', e);
+        screenSharing = false;
+        screenStream = null;
+        addSystemMessage(e.name === 'NotAllowedError' ? '⚠️ اشتراک صفحه لغو شد' : '⚠️ خطا: ' + e.message);
+    }
+}
+
+function stopScreenShare() {
+    if (!screenSharing) return;
+    if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+    screenSharing = false;
+    
+    const btn = document.getElementById('btnScreen');
+    btn.textContent = '🖥️ اشتراک صفحه';
+    btn.style.background = '#FF5722';
+    
+    if (localStream) {
+        const camTrack = localStream.getVideoTracks()[0];
+        for (const pc of Object.values(peerConnections)) {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender && camTrack) sender.replaceTrack(camTrack);
+        }
+    }
+    
+    document.getElementById('screenViewVideo').srcObject = null;
+    
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'screen_share_stop' }));
+    }
+    
+    // بازگشت به grid
+    if (userRole === 'teacher') setMode('grid');
+    
+    addSystemMessage('🖥️ اشتراک صفحه متوقف شد');
+}
+
+// ═══════════════════════════════════════════
+//              Whiteboard Drawing
+// ═══════════════════════════════════════════
+function initWhiteboard() {
+    canvas = document.getElementById('whiteboardCanvas');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    
+    // Event listeners
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('dblclick', handleDoubleClick);
+    
+    // سایز اولیه
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+}
+
+function resizeCanvas() {
+    if (!canvas || currentMode !== 'whiteboard') return;
+    const container = canvas.parentElement;
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        replayHistory();
+    }
+}
+
+function canDraw() {
+    return allowedDrawers === 'all' || userRole === 'teacher';
+}
+
+function startDrawing(e) {
+    if (!canDraw()) return;
+    if (currentTool === 'text') return;  // در حالت text، فقط کلیک
+    
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = (e.clientX - rect.left) / rect.width;
+    lastY = (e.clientY - rect.top) / rect.height;
+}
+
+function draw(e) {
+    if (!isDrawing || !canDraw()) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    
+    drawLine(lastX * canvas.width, lastY * canvas.height, x * canvas.width, y * canvas.height, currentColor, currentBrushSize, currentTool);
+    
+    sendWhiteboard({
+        type: 'draw', fromX: lastX, fromY: lastY, toX: x, toY: y,
+        color: currentColor, size: currentBrushSize, tool: currentTool
+    });
+    
+    lastX = x;
+    lastY = y;
+}
+
+function stopDrawing() { isDrawing = false; }
+
+function handleTouchStart(e) {
+    if (!canDraw() || currentTool === 'text') return;
+    e.preventDefault();
+    if (e.touches.length > 0) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        lastX = (e.touches[0].clientX - rect.left) / rect.width;
+        lastY = (e.touches[0].clientY - rect.top) / rect.height;
+    }
+}
+
+function handleTouchMove(e) {
+    if (!canDraw() || currentTool === 'text') return;
+    e.preventDefault();
+    if (!isDrawing || e.touches.length === 0) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches[0].clientX - rect.left) / rect.width;
+    const y = (e.touches[0].clientY - rect.top) / rect.height;
+    
+    drawLine(lastX * canvas.width, lastY * canvas.height, x * canvas.width, y * canvas.height, currentColor, currentBrushSize, currentTool);
+    
+    sendWhiteboard({
+        type: 'draw', fromX: lastX, fromY: lastY, toX: x, toY: y,
+        color: currentColor, size: currentBrushSize, tool: currentTool
+    });
+    
+    lastX = x;
+    lastY = y;
+}
+
+function handleDoubleClick(e) {
+    if (!canDraw()) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    showTextInput(x, y);
+}
+
+function drawLine(x1, y1, x2, y2, color, size, tool) {
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    if (tool === 'eraser') {
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = size * 5;
+    } else {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+    }
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+}
+
+function drawText(x, y, text, color, size) {
+    if (!ctx || !text) return;
+    ctx.fillStyle = color;
+    ctx.font = `${size}px Tahoma`;
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, x, y);
+}
+
+// ═══════════════════════════════════════════
+//              Text Tool
+// ═══════════════════════════════════════════
+function showTextInput(normX, normY) {
+    if (!canDraw()) return;
+    if (pendingTextInput) {
+        pendingTextInput.remove();
+        pendingTextInput = null;
+    }
+    
+    const rect = canvas.getBoundingClientRect();
+    const pixX = normX * rect.width;
+    const pixY = normY * rect.height;
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'متن...';
+    input.style.cssText = `
+        position: absolute;
+        left: ${pixX}px;
+        top: ${pixY}px;
+        background: rgba(255,255,255,0.95);
+        border: 2px solid #e94560;
+        padding: 5px 10px;
+        font-size: 16pt;
+        font-family: Tahoma;
+        z-index: 100;
+        min-width: 200px;
+        border-radius: 4px;
+        outline: none;
+    `;
+    canvas.parentElement.appendChild(input);
+    input.focus();
+    pendingTextInput = input;
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const text = input.value.trim();
+            if (text) {
+                const pixelSize = currentBrushSize * 8;
+                drawText(normX * canvas.width, normY * canvas.height, text, currentColor, pixelSize);
+                
+                sendWhiteboard({
+                    type: 'text',
+                    x: normX, y: normY,
+                    text: text,
+                    color: currentColor,
+                    size: currentBrushSize
+                });
+            }
+            input.remove();
+            pendingTextInput = null;
+        } else if (e.key === 'Escape') {
+            input.remove();
+            pendingTextInput = null;
+        }
+    });
+    
+    input.addEventListener('blur', () => {
+        setTimeout(() => {
+            if (pendingTextInput === input) {
+                input.remove();
+                pendingTextInput = null;
+            }
+        }, 200);
+    });
+}
+
+// ═══════════════════════════════════════════
+//              Whiteboard Tools
+// ═══════════════════════════════════════════
+function setColor(color, element) {
+    currentColor = color;
+    if (currentTool === 'eraser' || currentTool === 'text') {
+        currentTool = 'pen';
+        document.getElementById('toolPen').classList.add('active');
+        document.getElementById('toolEraser').classList.remove('active');
+        document.getElementById('toolText').classList.remove('active');
+    }
+    document.querySelectorAll('.wb-color').forEach(el => el.classList.remove('active'));
+    element.classList.add('active');
+}
+
+function setBrushSize(size) {
+    currentBrushSize = parseInt(size);
+    document.getElementById('brushSizeLabel').textContent = size;
+}
+
+function setTool(tool) {
+    currentTool = tool;
+    const tools = ['pen', 'eraser', 'text'];
+    tools.forEach(t => {
+        const btn = document.getElementById('tool' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) btn.classList.toggle('active', t === tool);
+    });
+    
+    if (tool === 'text') {
+        canvas.style.cursor = 'text';
+    } else {
+        canvas.style.cursor = 'crosshair';
+    }
+}
+
+function clearWhiteboard() {
+    if (!canDraw()) return;
+    if (!ctx) return;
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    sendWhiteboard({ type: 'clear' });
+    whiteboardHistory = [];
+    addSystemMessage('🗑️ تخته سفید پاک شد');
+}
+
+// ═══════════════════════════════════════════
+//              Whiteboard Network
+// ═══════════════════════════════════════════
+function sendWhiteboard(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'whiteboard', data: data }));
+    }
+}
+
+function handleWhiteboard(data) {
+    if (!data) return;
+    
+    // ذخیره در تاریخچه
+    if (data.type !== 'clear') {
+        whiteboardHistory.push(data);
+        if (whiteboardHistory.length > 5000) whiteboardHistory.shift();
+    } else {
+        whiteboardHistory = [];
+    }
+    
+    // اگر canvas ساخته نشده یا view فعال نیست، فقط ذخیره کن
+    if (!ctx) return;
+    if (currentMode !== 'whiteboard') return;
+    
+    if (data.type === 'draw') {
+        drawLine(
+            data.fromX * canvas.width, data.fromY * canvas.height,
+            data.toX * canvas.width, data.toY * canvas.height,
+            data.color, data.size, data.tool
+        );
+    } else if (data.type === 'text') {
+        drawText(
+            data.x * canvas.width, data.y * canvas.height,
+            data.text, data.color, data.size * 8
+        );
+    } else if (data.type === 'clear') {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+function replayHistory() {
+    if (!ctx || !whiteboardHistory.length) return;
+    console.log(`🔄 Replaying ${whiteboardHistory.length} whiteboard events`);
+    whiteboardHistory.forEach(data => {
+        if (data.type === 'draw') {
+            drawLine(
+                data.fromX * canvas.width, data.fromY * canvas.height,
+                data.toX * canvas.width, data.toY * canvas.height,
+                data.color, data.size, data.tool
+            );
+        } else if (data.type === 'text') {
+            drawText(
+                data.x * canvas.width, data.y * canvas.height,
+                data.text, data.color, data.size * 8
+            );
+        } else if (data.type === 'clear') {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    });
+}
+
+// ═══════════════════════════════════════════
+//              Leave Room
+// ═══════════════════════════════════════════
+function leaveRoom() {
+    if (!confirm('از کلاس خارج می‌شوید؟')) return;
+    intentionalClose = true;
+    if (screenSharing) stopScreenShare();
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    Object.keys(peerConnections).forEach(id => peerConnections[id].close());
+    if (ws) ws.close();
+    location.reload();
+}
+
+// ═══════════════════════════════════════════
+//              Init
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+    initWhiteboard();
+});
+
+setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+}, 30000);
+
+window.addEventListener('beforeunload', () => {
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+    if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+});
+</script>
+
+</body>
+</html>    
