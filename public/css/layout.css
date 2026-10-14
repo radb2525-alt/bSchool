@@ -1,0 +1,301 @@
+/* ═══════════════════════════════════════════ */
+/*              Layout Styles                  */
+/*              v3.5                           */
+/* ═══════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════ */
+/*              App Container                  */
+/* ═══════════════════════════════════════════ */
+#app {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+#app.visible {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════ */
+/*              Top Bar                        */
+/* ═══════════════════════════════════════════ */
+.top-bar {
+    background: linear-gradient(90deg, #16213e 0%, #0f3460 100%);
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0f3460;
+    height: 55px;
+    min-height: 55px;
+    max-height: 55px;
+    flex: 0 0 55px;
+    z-index: 50;
+}
+
+.top-bar .left,
+.top-bar .center,
+.top-bar .right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.app-logo {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.mode-indicator {
+    background: rgba(15, 52, 96, 0.7);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 10pt;
+    font-weight: bold;
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    transition: all 0.3s;
+}
+
+.mode-indicator.whiteboard {
+    color: #9C27B0;
+    border-color: rgba(156, 39, 176, 0.3);
+}
+
+.mode-indicator.screen {
+    color: #FF5722;
+    border-color: rgba(255, 87, 34, 0.3);
+}
+
+.mode-indicator.camera {
+    color: #2196F3;
+    border-color: rgba(33, 150, 243, 0.3);
+}
+
+.room-badge {
+    color: #999;
+    font-size: 10pt;
+}
+
+.room-badge b {
+    color: #e94560;
+}
+
+.online-badge {
+    color: #4CAF50;
+    font-size: 11pt;
+    font-weight: bold;
+}
+
+.connection-status {
+    font-size: 10pt;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.connection-status::before {
+    content: '●';
+    font-size: 12pt;
+}
+
+.connection-status.online {
+    color: #4CAF50;
+}
+
+.connection-status.offline {
+    color: #f44336;
+}
+
+/* ═══════════════════════════════════════════ */
+/*              Content Area                   */
+/* ═══════════════════════════════════════════ */
+.content-area {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-stage {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════ */
+/*              Views                          */
+/* ═══════════════════════════════════════════ */
+.view {
+    display: none !important;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.view.active {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+}
+
+/* ─── Grid View ─── */
+#gridView .videos-grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    overflow-y: auto;
+    align-content: start;
+    padding: 5px;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* ─── Camera View ─── */
+#cameraView {
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#cameraView.active {
+    display: flex;
+}
+
+#screenView {
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#screenView.active {
+    display: flex;
+}
+
+#cameraView video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ─── Screen View ─── */
+#screenView {
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#screenView video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ─── Whiteboard View ─── */
+#whiteboardView {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    flex-direction: column;
+}
+
+#whiteboardView.active {
+    display: flex;
+}
+
+#whiteboardView .wb-tools-bar {
+    background: #16213e;
+    padding: 8px 15px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #0f3460;
+    flex-shrink: 0;
+}
+
+#whiteboardView .wb-canvas-wrap {
+    flex: 1 1 0;
+    min-height: 0;
+    position: relative;
+    background: white;
+    display: flex;
+    overflow: hidden;
+}
+
+#whiteboardCanvas {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    display: block;
+    touch-action: none;
+}
+
+/* ═══════════════════════════════════════════ */
+/*              Responsive                     */
+/* ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .top-bar .center {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-logo {
+        font-size: 11pt;
+    }
+
+    .top-bar {
+        padding: 0 10px;
+        height: 50px;
+    }
+
+    .top-bar .left,
+    .top-bar .right {
+        gap: 8px;
+    }
+
+    .mode-indicator {
+        font-size: 9pt;
+        padding: 4px 10px;
+    }
+
+    .room-badge,
+    .online-badge {
+        font-size: 9pt;
+    }
+
+    .main-stage {
+        padding: 6px;
+    }
+
+    #gridView .videos-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+}

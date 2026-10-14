@@ -3,798 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>کلاس آنلاین v3.3 - مدرسه هوشمند</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Tahoma, sans-serif; }
-        body { background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
+    <title>کلاس آنلاین v3.5 - مدرسه هوشمند</title>
 
-        /* ═══════════════════════════════════════════ */
-        /*              Join Modal                     */
-        /* ═══════════════════════════════════════════ */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-        .modal.hidden { display: none; }
-        .modal-content { background: #16213e; padding: 40px; border-radius: 15px; width: 450px; max-width: 90%; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
-        .modal-content h1 { color: #e94560; margin-bottom: 25px; font-size: 22pt; }
-        .modal-content input, .modal-content select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #0f3460; border-radius: 8px; background: #0f3460; color: white; font-size: 13pt; font-family: Tahoma, sans-serif; }
-        .modal-content input:focus, .modal-content select:focus { outline: none; border-color: #e94560; }
-        .modal-content button { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-size: 15pt; font-weight: bold; cursor: pointer; transition: all 0.3s; }
-        .modal-content button:hover { transform: scale(1.02); }
-
-        /* ═══════════════════════════════════════════ */
-        /*              App Layout                     */
-        /* ═══════════════════════════════════════════ */
-        #app { display: none; flex-direction: column; height: 100vh; width: 100vw; }
-        #app.visible { display: flex; }
-
-        /* ═══ Top Bar ═══ */
-        .top-bar {
-            background: linear-gradient(90deg, #16213e 0%, #0f3460 100%);
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #0f3460;
-            height: 55px;
-            flex-shrink: 0;
-            z-index: 50;
-        }
-        .top-bar .left, .top-bar .center, .top-bar .right { display: flex; gap: 15px; align-items: center; }
-        .app-logo { font-size: 13pt; font-weight: bold; color: #667eea; }
-        .mode-indicator {
-            background: rgba(15, 52, 96, 0.7);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 10pt;
-            font-weight: bold;
-            color: #4CAF50;
-            border: 1px solid rgba(76, 175, 80, 0.3);
-        }
-        .mode-indicator.whiteboard { color: #9C27B0; border-color: rgba(156, 39, 176, 0.3); }
-        .mode-indicator.screen { color: #FF5722; border-color: rgba(255, 87, 34, 0.3); }
-        .mode-indicator.camera { color: #2196F3; border-color: rgba(33, 150, 243, 0.3); }
-        .room-badge { color: #999; font-size: 10pt; }
-        .room-badge b { color: #e94560; }
-        .online-badge { color: #4CAF50; font-size: 11pt; font-weight: bold; }
-        .connection-status { font-size: 10pt; display: flex; align-items: center; gap: 5px; }
-        .connection-status::before { content: '●'; font-size: 12pt; }
-        .connection-status.online { color: #4CAF50; }
-        .connection-status.offline { color: #f44336; }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Content Area                   */
-        /* ═══════════════════════════════════════════ */
-        .content-area { flex: 1; display: flex; min-height: 0; position: relative; overflow: hidden; }
-        .main-stage { flex: 1; display: flex; flex-direction: column; padding: 10px; min-width: 0; position: relative; }
-
-        /* ═══ Views ═══ */
-        .view { display: none; width: 100%; height: 100%; }
-        .view.active { display: flex; flex-direction: column; }
-
-        #gridView .videos-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 10px;
-            overflow-y: auto;
-            align-content: start;
-            padding: 5px;
-        }
-
-        .video-container {
-            background: #0f3460;
-            border-radius: 12px;
-            position: relative;
-            min-height: 180px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            aspect-ratio: 4/3;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .video-container video { width: 100%; height: 100%; object-fit: cover; }
-        .user-label {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.75);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 10pt;
-        }
-        .user-label.teacher { background: linear-gradient(135deg, #e94560, #c73650); }
-        .user-label.hand-raised { background: #FF9800; animation: pulse 1s infinite; }
-        .mic-status { position: absolute; top: 10px; left: 10px; font-size: 12pt; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 50%; }
-        .hand-indicator { position: absolute; top: 10px; right: 10px; font-size: 24pt; animation: wave 1s infinite; }
-
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        @keyframes wave { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
-
-        /* Camera View */
-        #cameraView {
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        #cameraView video { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Screen View */
-        #screenView {
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        #screenView video { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Whiteboard View */
-        #whiteboardView { background: white; border-radius: 12px; overflow: hidden; position: relative; }
-        .wb-tools-bar {
-            background: #16213e;
-            padding: 8px 15px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-            border-bottom: 2px solid #0f3460;
-            flex-shrink: 0;
-        }
-        .wb-canvas-wrap { flex: 1; position: relative; background: white; }
-        #whiteboardCanvas { width: 100%; height: 100%; cursor: crosshair; display: block; touch-action: none; }
-
-        .wb-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            background: #0f3460;
-            color: white;
-            cursor: pointer;
-            font-size: 10pt;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        .wb-btn.active { background: #e94560; }
-        .wb-btn:hover { background: #e94560; }
-        .wb-color {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .wb-color:hover { transform: scale(1.15); }
-        .wb-color.active { border-color: #e94560; transform: scale(1.25); box-shadow: 0 0 12px #e94560; }
-        .wb-size-range { width: 90px; }
-
-        /* No Access Message */
-        #noAccessMsg {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #16213e;
-            color: #e94560;
-            padding: 30px 50px;
-            border-radius: 15px;
-            font-size: 15pt;
-            font-weight: bold;
-            text-align: center;
-            z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            border: 2px solid #e94560;
-        }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Hover Sidebars                 */
-        /* ═══════════════════════════════════════════ */
-        .sidebar-trigger {
-            position: fixed;
-            left: 0;
-            top: 55px;
-            bottom: 0;
-            width: 50px;
-            z-index: 300;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 12px;
-            padding: 10px 0;
-            pointer-events: none;
-        }
-        .sidebar-trigger-btn {
-            pointer-events: auto;
-            width: 42px;
-            height: 42px;
-            margin: 0 auto;
-            border-radius: 0 22px 22px 0;
-            background: rgba(22, 33, 62, 0.9);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(102, 126, 234, 0.3);
-            border-left: none;
-            color: white;
-            font-size: 16pt;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            box-shadow: 4px 4px 15px rgba(0,0,0,0.3);
-        }
-        .sidebar-trigger-btn:hover {
-            width: 50px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-        }
-        .sidebar-trigger-btn.active {
-            width: 50px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-        }
-        .sidebar-trigger-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .sidebar-panel {
-            position: fixed;
-            left: 50px;
-            top: 55px;
-            bottom: 0;
-            width: 0;
-            background: #16213e;
-            border-right: 2px solid #0f3460;
-            box-shadow: 5px 0 30px rgba(0,0,0,0.5);
-            overflow: hidden;
-            transition: width 0.3s ease;
-            z-index: 299;
-            display: flex;
-            flex-direction: column;
-        }
-        .sidebar-panel.open {
-            width: 340px;
-        }
-        .sidebar-panel-header {
-            background: linear-gradient(90deg, #0f3460, #16213e);
-            padding: 12px 20px;
-            font-weight: bold;
-            color: #e94560;
-            font-size: 12pt;
-            border-bottom: 2px solid #0f3460;
-            flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            white-space: nowrap;
-        }
-        .sidebar-panel-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            min-width: 340px;
-        }
-
-        /* Chat Sidebar */
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-width: 300px;
-        }
-        .chat-msg {
-            background: #0f3460;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 10pt;
-            word-wrap: break-word;
-        }
-        .chat-msg .user { color: #e94560; font-weight: bold; font-size: 9pt; }
-        .chat-msg .time { color: #666; font-size: 8pt; float: left; }
-        .chat-msg.system { background: #0a0f1f; color: #888; font-size: 9pt; text-align: center; }
-        .chat-input {
-            display: flex;
-            gap: 5px;
-            padding: 10px;
-            border-top: 2px solid #0f3460;
-            flex-shrink: 0;
-            min-width: 340px;
-        }
-        .chat-input input {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 20px;
-            background: #0f3460;
-            color: white;
-            font-size: 10pt;
-        }
-        .chat-input input:focus { outline: 1px solid #e94560; }
-        .chat-input button {
-            padding: 8px 15px;
-            background: #e94560;
-            border: none;
-            border-radius: 20px;
-            color: white;
-            cursor: pointer;
-            font-size: 14pt;
-        }
-
-        /* Participants Sidebar */
-        .participants-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 300px;
-        }
-        .participant-item {
-            background: #0f3460;
-            padding: 12px 15px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 11pt;
-            transition: all 0.2s;
-        }
-        .participant-item.teacher {
-            background: linear-gradient(135deg, #e94560, #c73650);
-        }
-        .participant-item:hover {
-            transform: translateX(3px);
-        }
-        .participant-item .role-icon { font-size: 14pt; }
-        .participant-item .name { flex: 1; font-weight: bold; }
-        .participant-item .status { font-size: 10pt; }
-
-        /* Control Sidebar */
-        .control-section {
-            background: #0f3460;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            min-width: 300px;
-        }
-        .control-section h3 {
-            color: #e94560;
-            font-size: 11pt;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .mode-buttons-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .mode-btn {
-            padding: 12px 10px;
-            border: 2px solid #1e3a5f;
-            border-radius: 10px;
-            background: #16213e;
-            color: white;
-            cursor: pointer;
-            font-size: 11pt;
-            font-weight: bold;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-        .mode-btn:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-        }
-        .mode-btn.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-        }
-        .mode-btn .mode-icon { font-size: 20pt; }
-        .mode-btn .mode-label { font-size: 10pt; }
-
-        .control-btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            cursor: pointer;
-            font-size: 11pt;
-            font-weight: bold;
-            margin-bottom: 8px;
-            transition: all 0.2s;
-        }
-        .control-btn:hover { transform: scale(1.02); }
-        .control-btn.secondary {
-            background: #16213e;
-            border: 2px solid #1e3a5f;
-        }
-        .control-btn.danger {
-            background: #f44336;
-        }
-
-        .info-line {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            font-size: 10pt;
-            color: #ccc;
-            border-bottom: 1px solid #1e3a5f;
-        }
-        .info-line:last-child { border-bottom: none; }
-        .info-line .value { color: #4CAF50; font-weight: bold; }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Glass Control Bar              */
-        /* ═══════════════════════════════════════════ */
-        .glass-control-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(22, 33, 62, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            border-radius: 30px;
-            padding: 8px 15px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            z-index: 250;
-            transition: all 0.3s;
-        }
-        .glass-control-bar:hover {
-            background: rgba(22, 33, 62, 0.95);
-            border-color: rgba(102, 126, 234, 0.6);
-        }
-
-        .glass-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(15, 52, 96, 0.8);
-            color: white;
-            cursor: pointer;
-            font-size: 18pt;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .glass-btn:hover {
-            transform: scale(1.1);
-            background: rgba(102, 126, 234, 0.5);
-        }
-        .glass-btn.active {
-            background: linear-gradient(135deg, #4CAF50, #388E3C);
-        }
-        .glass-btn.off {
-            background: linear-gradient(135deg, #f44336, #c62828);
-        }
-        .glass-btn.raised {
-            background: linear-gradient(135deg, #FF9800, #F57C00);
-            animation: pulse 1s infinite;
-        }
-        .glass-btn.danger {
-            background: linear-gradient(135deg, #f44336, #c62828);
-        }
-        .glass-btn .tooltip {
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.9);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 9pt;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-        }
-        .glass-btn:hover .tooltip {
-            opacity: 1;
-        }
-
-        .glass-divider {
-            width: 1px;
-            height: 30px;
-            background: rgba(102, 126, 234, 0.4);
-            margin: 0 3px;
-        }
-
-        .glass-btn.whiteboard-btn {
-            background: rgba(156, 39, 176, 0.5);
-        }
-        .glass-btn.whiteboard-btn:hover {
-            background: rgba(156, 39, 176, 0.8);
-        }
-        .glass-btn.screen-btn {
-            background: rgba(255, 87, 34, 0.5);
-        }
-        .glass-btn.screen-btn:hover {
-            background: rgba(255, 87, 34, 0.8);
-        }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Permissions Modal              */
-        /* ═══════════════════════════════════════════ */
-        .permissions-modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.85);
-            display: none;
-            z-index: 10001;
-            align-items: center;
-            justify-content: center;
-        }
-        .permissions-modal.show { display: flex; }
-        .permissions-content {
-            background: #16213e;
-            border-radius: 15px;
-            width: 600px;
-            max-width: 95vw;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-            overflow: hidden;
-        }
-        .permissions-header {
-            background: #0f3460;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #667eea;
-        }
-        .permissions-header h2 { color: #667eea; font-size: 15pt; margin: 0; }
-        .permissions-body { flex: 1; overflow-y: auto; padding: 20px; }
-        .permission-section {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: #0f3460;
-            border-radius: 10px;
-        }
-        .permission-section h3 { color: #e94560; font-size: 12pt; margin-bottom: 12px; }
-        .radio-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
-        .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #16213e;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 11pt;
-        }
-        .radio-group label:hover { background: #1e3a5f; }
-        .radio-group input[type="radio"] { width: 18px; height: 18px; accent-color: #667eea; cursor: pointer; }
-        .user-list {
-            margin-top: 10px;
-            padding: 10px;
-            background: #16213e;
-            border-radius: 8px;
-            display: none;
-        }
-        .user-list.visible { display: block; }
-        .user-list-title { color: #999; font-size: 10pt; margin-bottom: 8px; }
-        .checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: #0f3460;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 10pt;
-            transition: all 0.2s;
-        }
-        .checkbox-item:hover { background: #1e3a5f; }
-        .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #4CAF50; cursor: pointer; }
-        .permissions-footer {
-            background: #0f3460;
-            padding: 15px 20px;
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            border-top: 2px solid #667eea;
-        }
-        .permissions-btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 11pt;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        .permissions-btn:hover { transform: scale(1.05); }
-        .permissions-btn.save { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-        .permissions-btn.cancel { background: #f44336; color: white; }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Chat Ticker (Header)           */
-        /* ═══════════════════════════════════════════ */
-        .chat-ticker {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            padding: 4px 12px;
-            background: rgba(15, 52, 96, 0.4);
-            border-radius: 8px;
-            border: 1px solid rgba(102, 126, 234, 0.15);
-            cursor: pointer;
-            transition: all 0.2s;
-            min-width: 280px;
-            max-width: 420px;
-            overflow: hidden;
-        }
-        .chat-ticker:hover {
-            background: rgba(15, 52, 96, 0.7);
-            border-color: rgba(102, 126, 234, 0.4);
-        }
-        .chat-ticker.hidden {
-            display: none;
-        }
-        .chat-ticker-line {
-            font-size: 10pt;
-            color: #ccc;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.4;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .chat-ticker-line .ticker-user {
-            color: #e94560;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-        .chat-ticker-line .ticker-message {
-            color: #ccc;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .chat-ticker-line.new {
-            animation: tickerFlash 1.5s ease-in-out;
-        }
-        @keyframes tickerFlash {
-            0%, 100% { color: #ccc; }
-            50% { color: #FFEB3B; font-weight: bold; }
-        }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Chat Notification Icon         */
-        /* ═══════════════════════════════════════════ */
-        .sidebar-trigger-btn.notify {
-            background: linear-gradient(135deg, #e94560, #c73650) !important;
-            border-color: #e94560 !important;
-            animation: notifyPulse 1.2s infinite;
-        }
-        .sidebar-trigger-btn.notify::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 12px;
-            height: 12px;
-            background: #FFEB3B;
-            border-radius: 50%;
-            border: 2px solid #1a1a2e;
-            box-shadow: 0 0 8px #FFEB3B;
-        }
-        .sidebar-trigger-btn {
-            position: relative;
-        }
-        @keyframes notifyPulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.7); }
-            50% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(233, 69, 96, 0); }
-        }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Chat Settings Section          */
-        /* ═══════════════════════════════════════════ */
-        .chat-setting-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 11pt;
-            color: #ccc;
-        }
-        .chat-setting-row label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            flex: 1;
-        }
-        .chat-setting-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #4CAF50;
-            cursor: pointer;
-        }
-        .chat-setting-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .chat-setting-actions button {
-            flex: 1;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 10pt;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        .chat-setting-actions button:hover {
-            transform: scale(1.03);
-        }
-        .sound-test-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-        .sound-toggle-btn {
-            background: #16213e;
-            border: 2px solid #1e3a5f;
-            color: white;
-        }
-        .sound-toggle-btn.muted {
-            background: #f44336;
-            border-color: #f44336;
-        }
-
-        /* ═══════════════════════════════════════════ */
-        /*              Responsive                     */
-        /* ═══════════════════════════════════════════ */
-        @media (max-width: 768px) {
-            .glass-btn { width: 42px; height: 42px; font-size: 16pt; }
-            .glass-control-bar { padding: 6px 10px; gap: 5px; }
-            .sidebar-panel.open { width: 90vw; }
-            .sidebar-panel-body { min-width: auto; }
-            .top-bar .center { display: none; }
-        }
-    </style>
+    <!-- ⭐ CSS خارجی -->
+    <link rel="stylesheet" href="css/base.css?v=3.5">
+    <link rel="stylesheet" href="css/layout.css?v=3.5">
+    <link rel="stylesheet" href="css/components.css?v=3.5">
+    <link rel="stylesheet" href="css/modals.css?v=3.5">
+    <link rel="stylesheet" href="css/animations.css?v=3.5">
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════ -->
-<!--              Join Modal                     -->
+<!--              Join Modal (Compact)           -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="modal" id="joinModal">
     <div class="modal-content">
-        <h1>🎓 کلاس آنلاین</h1>
-        <input type="text" id="inputRoomId" placeholder="کد اتاق" value="class-101">
-        <input type="text" id="inputUserName" placeholder="نام شما">
-        <select id="inputRole">
-            <option value="student">👨‍🎓 دانش‌آموز</option>
-            <option value="teacher">👨‍🏫 معلم</option>
-        </select>
-        <button onclick="joinRoom()">🚀 ورود به کلاس</button>
+
+        <!-- Header -->
+        <div class="modal-header">
+            <h1>🎓 کلاس آنلاین</h1>
+            <button class="help-icon-btn" onclick="openHelpModal()" data-tooltip="راهنمای استفاده">❓</button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+
+            <div class="modal-field">
+                <label>📝 کد اتاق</label>
+                <input type="text" id="inputRoomId" placeholder="مثلاً: class-101" value="class-101">
+            </div>
+
+            <div class="modal-field">
+                <label>👤 نام شما</label>
+                <input type="text" id="inputUserName" placeholder="نام و نام خانوادگی">
+            </div>
+
+            <div class="modal-field">
+                <label>🎭 نقش شما</label>
+                <select id="inputRole">
+                    <option value="student">👨‍🎓 دانش‌آموز</option>
+                    <option value="teacher">👨‍🏫 معلم</option>
+                </select>
+            </div>
+
+            <!-- بخش سرور -->
+            <div class="server-section-compact" id="serverSection">
+                <div class="server-section-header" onclick="toggleServerSection()">
+                    <div class="server-section-title">
+                        <span class="server-status-indicator" id="serverStatusDot"></span>
+                        <span id="serverSectionTitle">⚙️ سرور پیش‌فرض</span>
+                    </div>
+                    <span class="server-section-toggle" id="serverToggleIcon">▼</span>
+                </div>
+
+                <div class="server-section-body" id="serverSectionBody">
+                    <div class="server-section-inner">
+
+                        <div class="server-mode-options">
+                            <label class="server-mode-option selected" id="modeDefaultLabel">
+                                <input type="radio" name="serverMode" value="default" checked onchange="toggleServerMode()">
+                                <div class="option-content">
+                                    <div class="option-title">🌐 پیش‌فرض (خودکار)</div>
+                                    <div class="option-desc">سرور اینترنتی — همیشه در دسترس</div>
+                                </div>
+                            </label>
+
+                            <label class="server-mode-option" id="modeCustomLabel">
+                                <input type="radio" name="serverMode" value="custom" onchange="toggleServerMode()">
+                                <div class="option-content">
+                                    <div class="option-title">🔧 سرور سفارشی</div>
+                                    <div class="option-desc">شبکه مدرسه، یا سرور اختصاصی</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="server-address-box" id="serverAddressBox">
+                            <label>📍 آدرس سرور:</label>
+                            <input type="text" id="inputServerAddress" 
+                                   placeholder="http://192.168.1.100:8686" dir="ltr">
+
+                            <div class="server-examples">
+                                <div class="server-examples-title">📋 نمونه‌ها (کلیک کنید):</div>
+                                <div class="server-example-item" onclick="setServerExample('http://localhost:8686')">
+                                    <span>🖥️</span>http://localhost:8686
+                                </div>
+                                <div class="server-example-item" onclick="setServerExample('http://192.168.1.100:8686')">
+                                    <span>🏫</span>http://192.168.1.100:8686
+                                </div>
+                                <div class="server-example-item" onclick="setServerExample('https://myschool.ir')">
+                                    <span>🌐</span>https://myschool.ir
+                                </div>
+                            </div>
+
+                            <button class="test-connection-btn" id="testConnectionBtn" onclick="testServerConnection()">
+                                🔌 تست اتصال
+                            </button>
+
+                            <div class="connection-result" id="connectionResult"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+            <button class="join-btn" onclick="joinRoom()">🚀 ورود به کلاس</button>
+            <div class="modal-footer-note">💡 اگر مطمئن نیستید، همینطور رها کنید و وارد شوید</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              Help Modal                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="help-modal" id="helpModal">
+    <div class="help-content">
+
+        <div class="help-header">
+            <h2>❓ راهنمای استفاده</h2>
+            <button class="help-close" onclick="closeHelpModal()">❌</button>
+        </div>
+
+        <div class="help-body">
+
+            <div class="help-item">
+                <div class="help-item-title">📝 کد اتاق</div>
+                <div class="help-item-content">
+                    کدی که معلم شما تعیین کرده است. همه دانش‌آموزان باید <b>همین کد</b> را وارد کنند.
+                    <div class="help-item-example">مثال: class-101</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">👤 نام شما</div>
+                <div class="help-item-content">
+                    نامی که برای معلم و سایر دانش‌آموزان نمایش داده می‌شود.
+                    <div class="help-item-example">مثال: علی رضایی</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">🎭 نقش شما</div>
+                <div class="help-item-content">
+                    • <b>دانش‌آموز:</b> می‌تواند ویدیو، چت و تخته سفید را ببیند.<br>
+                    • <b>معلم:</b> می‌تواند کلاس را کنترل کند (تغییر حالت، اشتراک صفحه).
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">⚙️ اتصال سرور</div>
+                <div class="help-item-content">
+                    • <b>پیش‌فرض:</b> اگر معلم آدرس خاصی نداده.<br>
+                    • <b>سفارشی:</b> اگر معلم گفته «سرور مدرسه».
+                    <div class="help-item-example">http://192.168.1.100:8686</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">🔌 تست اتصال</div>
+                <div class="help-item-content">
+                    قبل از ورود، مطمئن شوید سرور در دسترس است.
+                </div>
+            </div>
+
+            <div class="help-item" style="background: linear-gradient(135deg, #1e3a5f, #0f3460); border-right-color: #4CAF50;">
+                <div class="help-item-title" style="color: #4CAF50;">💡 نکته</div>
+                <div class="help-item-content">
+                    اگر مطمئن نیستید، همین‌طور رها کنید و وارد شوید.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="help-footer">
+            <button class="help-ok-btn" onclick="closeHelpModal()">✅ متوجه شدم</button>
+        </div>
+
     </div>
 </div>
 
@@ -803,14 +192,13 @@
 <!-- ═══════════════════════════════════════════ -->
 <div id="app">
 
-    <!-- ═══ Top Bar ═══ -->
+    <!-- Top Bar -->
     <header class="top-bar">
         <div class="left">
             <span class="app-logo">🎓 کلاس آنلاین</span>
             <div class="mode-indicator" id="modeIndicator">🎬 Grid</div>
         </div>
         <div class="center" style="flex: 1; justify-content: center; max-width: 450px;">
-            <!-- ⭐ نوار پیام‌ها در هدر -->
             <div class="chat-ticker hidden" id="chatTicker" onclick="openSidebar('chat')">
                 <div class="chat-ticker-line" id="tickerLine1"></div>
                 <div class="chat-ticker-line" id="tickerLine2"></div>
@@ -824,7 +212,7 @@
         </div>
     </header>
 
-    <!-- ═══ Content Area ═══ -->
+    <!-- Content Area -->
     <div class="content-area">
 
         <main class="main-stage" id="mainStage">
@@ -894,7 +282,6 @@
 <!--              Hover Sidebars                 -->
 <!-- ═══════════════════════════════════════════ -->
 
-<!-- Trigger Buttons (همیشه نمایان) -->
 <div class="sidebar-trigger">
     <button class="sidebar-trigger-btn" id="triggerChat" onclick="toggleSidebar('chat')" onmouseenter="hoverSidebar('chat')">💬</button>
     <button class="sidebar-trigger-btn" id="triggerParticipants" onclick="toggleSidebar('participants')" onmouseenter="hoverSidebar('participants')">👥</button>
@@ -925,7 +312,7 @@
     </div>
 </aside>
 
-<!-- Control Sidebar (فقط معلم) -->
+<!-- Control Sidebar -->
 <aside class="sidebar-panel teacher-only" id="sidebarControl" onmouseleave="scheduleClose('control')">
     <div class="sidebar-panel-header">
         <span>⚙️ کنترل محیط</span>
@@ -933,149 +320,107 @@
     </div>
     <div class="sidebar-panel-body">
 
-        <!-- حالت‌ها -->
         <div class="control-section">
             <h3>🎬 حالت نمایش</h3>
             <div class="mode-buttons-grid">
                 <button class="mode-btn" data-mode="grid" onclick="setMode('grid')">
-                    <span class="mode-icon">🎬</span>
-                    <span class="mode-label">Grid</span>
+                    <span class="mode-icon">🎬</span><span class="mode-label">Grid</span>
                 </button>
                 <button class="mode-btn" data-mode="camera" onclick="setMode('camera')">
-                    <span class="mode-icon">📹</span>
-                    <span class="mode-label">دوربین معلم</span>
+                    <span class="mode-icon">📹</span><span class="mode-label">دوربین معلم</span>
                 </button>
                 <button class="mode-btn" data-mode="whiteboard" onclick="setMode('whiteboard')">
-                    <span class="mode-icon">🎨</span>
-                    <span class="mode-label">تخته سفید</span>
+                    <span class="mode-icon">🎨</span><span class="mode-label">تخته سفید</span>
                 </button>
                 <button class="mode-btn" data-mode="screen" onclick="setMode('screen')">
-                    <span class="mode-icon">🖥️</span>
-                    <span class="mode-label">اشتراک صفحه</span>
+                    <span class="mode-icon">🖥️</span><span class="mode-label">اشتراک صفحه</span>
                 </button>
             </div>
         </div>
 
-        <!-- ⭐ اعلان‌های چت -->
+        <div class="control-section">
+            <h3>🎨 کنترل تخته سفید</h3>
+            <button class="control-btn" onclick="openPermissionsModal()">⚙️ تنظیم دسترسی‌ها</button>
+            <button class="control-btn secondary" onclick="clearWhiteboard()">🗑️ پاک کردن تخته</button>
+        </div>
+
         <div class="control-section">
             <h3>🔔 اعلان‌های چت</h3>
-            
             <div class="chat-setting-row">
-                <label>
-                    <input type="checkbox" id="settingSound" onchange="saveChatSettings()">
-                    <span>صدای اعلان (دینگ)</span>
-                </label>
+                <label><input type="checkbox" id="settingSound" onchange="saveChatSettings()"><span>صدای اعلان (دینگ)</span></label>
             </div>
-            
             <div class="chat-setting-row">
-                <label>
-                    <input type="checkbox" id="settingIcon" onchange="saveChatSettings()">
-                    <span>تغییر رنگ آیکون چت</span>
-                </label>
+                <label><input type="checkbox" id="settingIcon" onchange="saveChatSettings()"><span>تغییر رنگ آیکون چت</span></label>
             </div>
-            
             <div class="chat-setting-row">
-                <label>
-                    <input type="checkbox" id="settingTicker" onchange="saveChatSettings()">
-                    <span>نمایش پیام در هدر</span>
-                </label>
+                <label><input type="checkbox" id="settingTicker" onchange="saveChatSettings()"><span>نمایش پیام در هدر</span></label>
             </div>
-            
             <div class="chat-setting-actions">
                 <button class="sound-test-btn" onclick="playDing(true)">🔊 تست صدا</button>
                 <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSoundMute()">🔊 قطع صدا</button>
             </div>
         </div>
 
-        <!-- کنترل تخته سفید -->
-        <div class="control-section">
-            <h3>🎨 کنترل تخته سفید</h3>
-            <button class="control-btn" onclick="openPermissionsModal()">
-                ⚙️ تنظیم دسترسی‌ها
-            </button>
-            <button class="control-btn secondary" onclick="clearWhiteboard()">
-                🗑️ پاک کردن تخته
-            </button>
+        <div class="control-section" style="background: linear-gradient(135deg, #1e3a5f, #0f3460);">
+            <h3>📖 راهنمای سریع</h3>
+            <div style="color:#ccc; font-size:10pt; line-height:2;">
+                <div>🎬 <b>حالت‌ها:</b> تغییر نمای کلاس</div>
+                <div>🎨 <b>تخته سفید:</b> رسم + متن</div>
+                <div>🔔 <b>اعلان‌ها:</b> صدا + آیکون</div>
+                <div>🖥️ <b>اشتراک صفحه:</b> دسکتاپ معلم</div>
+                <div>✋ <b>سوال:</b> دست بالا</div>
+                <div>💬 <b>چت:</b> گفتگو</div>
+            </div>
         </div>
 
-        <!-- اطلاعات -->
         <div class="control-section">
             <h3>📊 اطلاعات اتاق</h3>
-            <div class="info-line">
-                <span>کد اتاق:</span>
-                <span class="value" id="infoRoomId">---</span>
-            </div>
-            <div class="info-line">
-                <span>نقش شما:</span>
-                <span class="value" id="infoRole">---</span>
-            </div>
-            <div class="info-line">
-                <span>تعداد حاضرین:</span>
-                <span class="value" id="infoOnlineCount">0</span>
-            </div>
-            <div class="info-line">
-                <span>وضعیت اتصال:</span>
-                <span class="value" id="infoConnection">---</span>
-            </div>
+            <div class="info-line"><span>کد اتاق:</span><span class="value" id="infoRoomId">---</span></div>
+            <div class="info-line"><span>نقش شما:</span><span class="value" id="infoRole">---</span></div>
+            <div class="info-line"><span>تعداد حاضرین:</span><span class="value" id="infoOnlineCount">0</span></div>
+            <div class="info-line"><span>وضعیت اتصال:</span><span class="value" id="infoConnection">---</span></div>
         </div>
 
     </div>
 </aside>
 
-<!-- ═══════════════════════════════════════════ -->
-<!--              Glass Control Bar              -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- Glass Control Bar -->
 <div class="glass-control-bar" id="glassControlBar">
-    <button class="glass-btn active" id="btnMic" onclick="toggleMic()">
-        🎤
-        <span class="tooltip">میکروفن</span>
+    <button class="glass-btn active" id="btnMic" onclick="toggleMic()" data-tooltip="میکروفن">
+        🎤<span class="tooltip">میکروفن</span>
     </button>
-    <button class="glass-btn active" id="btnCam" onclick="toggleCam()">
-        📹
-        <span class="tooltip">دوربین</span>
+    <button class="glass-btn active" id="btnCam" onclick="toggleCam()" data-tooltip="دوربین">
+        📹<span class="tooltip">دوربین</span>
     </button>
-    <button class="glass-btn" id="btnHand" onclick="toggleHand()">
-        ✋
-        <span class="tooltip">سوال</span>
+    <button class="glass-btn" id="btnHand" onclick="toggleHand()" data-tooltip="سوال">
+        ✋<span class="tooltip">سوال</span>
     </button>
-
     <div class="glass-divider"></div>
-
-    <button class="glass-btn whiteboard-btn" id="btnWhiteboard" onclick="toggleWhiteboard()">
-        🎨
-        <span class="tooltip">تخته سفید</span>
+    <button class="glass-btn whiteboard-btn" id="btnWhiteboard" onclick="toggleWhiteboard()" data-tooltip="تخته سفید">
+        🎨<span class="tooltip">تخته سفید</span>
     </button>
-    <button class="glass-btn screen-btn" id="btnScreen" onclick="toggleScreenShare()">
-        🖥️
-        <span class="tooltip">اشتراک صفحه</span>
+    <button class="glass-btn screen-btn" id="btnScreen" onclick="toggleScreenShare()" data-tooltip="اشتراک صفحه">
+        🖥️<span class="tooltip">اشتراک صفحه</span>
     </button>
-
     <div class="glass-divider"></div>
-
-    <button class="glass-btn danger" onclick="leaveRoom()">
-        🚪
-        <span class="tooltip">خروج</span>
+    <button class="glass-btn danger" onclick="leaveRoom()" data-tooltip="خروج">
+        🚪<span class="tooltip">خروج</span>
     </button>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!--              Permissions Modal              -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- Permissions Modal -->
 <div class="permissions-modal" id="permissionsModal">
     <div class="permissions-content">
-
         <div class="permissions-header">
             <h2>⚙️ کنترل دسترسی تخته سفید</h2>
             <button onclick="closePermissionsModal()" style="background:#f44336;border:none;color:white;padding:8px 15px;border-radius:8px;cursor:pointer;font-size:14pt;">❌</button>
         </div>
-
         <div class="permissions-body">
-
             <div class="permission-section">
                 <h3>👁️ چه کسی تخته را ببیند؟</h3>
                 <div class="radio-group">
                     <label><input type="radio" name="viewMode" value="all"> <span>همه دانش‌آموزان</span></label>
-                    <label><input type="radio" name="viewMode" value="selected" checked> <span>انتخابی (تعیین می‌کنم)</span></label>
+                    <label><input type="radio" name="viewMode" value="selected" checked> <span>انتخابی</span></label>
                     <label><input type="radio" name="viewMode" value="teacher"> <span>فقط من (معلم)</span></label>
                 </div>
                 <div class="user-list" id="viewersList">
@@ -1083,1366 +428,43 @@
                     <div class="checkboxes" id="viewersCheckboxes"></div>
                 </div>
             </div>
-
             <div class="permission-section">
-                <h3>✏️ چه کسی روی تخته بنویسد؟</h3>
+                <h3>✏️ چه کسی بنویسد؟</h3>
                 <div class="radio-group">
-                    <label><input type="radio" name="drawMode" value="teacher" checked> <span>فقط من (معلم)</span></label>
-                    <label><input type="radio" name="drawMode" value="selected"> <span>انتخابی (تعیین می‌کنم)</span></label>
-                    <label><input type="radio" name="drawMode" value="all"> <span>همه دانش‌آموزان</span></label>
+                    <label><input type="radio" name="drawMode" value="teacher" checked> <span>فقط من</span></label>
+                    <label><input type="radio" name="drawMode" value="selected"> <span>انتخابی</span></label>
+                    <label><input type="radio" name="drawMode" value="all"> <span>همه</span></label>
                 </div>
                 <div class="user-list" id="drawersList">
                     <div class="user-list-title">👥 انتخاب نویسندگان:</div>
                     <div class="checkboxes" id="drawersCheckboxes"></div>
                 </div>
             </div>
-
             <div class="permission-section">
                 <h3>💬 چت</h3>
                 <div style="color:#4CAF50;font-size:11pt;">✅ چت برای همه فعال است</div>
             </div>
-
         </div>
-
         <div class="permissions-footer">
             <button class="permissions-btn save" onclick="savePermissions()">💾 ذخیره و بستن</button>
             <button class="permissions-btn cancel" onclick="closePermissionsModal()">❌ انصراف</button>
         </div>
-
     </div>
 </div>
 
-<script>
- // ═══════════════════════════════════════════
-//              Configuration
-// ═══════════════════════════════════════════
-const WS_PROTOCOL = location.protocol === 'https:' ? 'wss' : 'ws';
-const WS_URL = `${WS_PROTOCOL}://${location.host}/ws`;
-
-const rtcConfig = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-};
-
-// ═══════════════════════════════════════════
-//              Global State
-// ═══════════════════════════════════════════
-let ws = null;
-let localStream = null;
-let roomId = '';
-let userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-let userName = '';
-let userRole = 'student';
-let micOn = true;
-let camOn = true;
-let handRaised = false;
-let reconnectAttempts = 0;
-let intentionalClose = false;
-
-let peerConnections = {};
-let remoteStreams = {};
-let pendingCandidates = {};
-let remoteNames = {};
-let remoteRoles = {};
-
-let screenStream = null;
-let screenSharing = false;
-let currentMode = 'grid';
-
-let roomMembers = [];
-let wbPermissions = {
-    viewMode: 'all',
-    viewers: [],
-    drawMode: 'teacher',
-    drawers: [],
-};
-
-// Whiteboard
-let canvas = null;
-let ctx = null;
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
-let currentColor = '#000000';
-let currentBrushSize = 3;
-let currentTool = 'pen';
-let whiteboardHistory = [];
-let pendingTextInput = null;
-
-// Sidebar management
-let sidebarCloseTimers = {};
-let activeSidebar = null;
-
-// ═══════════════════════════════════════════
-//              Chat Notifications State
-// ═══════════════════════════════════════════
-let chatSettings = {
-    sound: true,
-    icon: true,
-    ticker: true,
-    muted: false,       // قطع کامل صدا
-};
-let notificationAudio = null;
-let lastMessages = [];      // ۳ پیام آخر
-let unreadCount = 0;
-let chatSidebarOpen = false;
-let audioContext = null;
-
-// ═══════════════════════════════════════════
-//              Load/Save Settings
-// ═══════════════════════════════════════════
-function loadChatSettings() {
-    try {
-        const saved = localStorage.getItem('classroom_chat_settings');
-        if (saved) {
-            chatSettings = { ...chatSettings, ...JSON.parse(saved) };
-        }
-    } catch (e) {
-        console.log('⚠️ Could not load settings:', e);
-    }
-    applyChatSettingsUI();
-}
-
-function saveChatSettings() {
-    chatSettings.sound = document.getElementById('settingSound')?.checked ?? true;
-    chatSettings.icon = document.getElementById('settingIcon')?.checked ?? true;
-    chatSettings.ticker = document.getElementById('settingTicker')?.checked ?? true;
-
-    try {
-        localStorage.setItem('classroom_chat_settings', JSON.stringify(chatSettings));
-    } catch (e) {
-        console.log('⚠️ Could not save settings:', e);
-    }
-
-    applyChatSettingsUI();
-    updateChatTicker();
-    console.log('💾 Settings saved:', chatSettings);
-}
-
-function applyChatSettingsUI() {
-    const s = document.getElementById('settingSound');
-    const i = document.getElementById('settingIcon');
-    const t = document.getElementById('settingTicker');
-    if (s) s.checked = chatSettings.sound;
-    if (i) i.checked = chatSettings.icon;
-    if (t) t.checked = chatSettings.ticker;
-
-    // به‌روزرسانی دکمه قطع صدا
-    const btn = document.getElementById('soundToggleBtn');
-    if (btn) {
-        if (chatSettings.muted) {
-            btn.textContent = '🔇 وصل صدا';
-            btn.classList.add('muted');
-        } else {
-            btn.textContent = '🔊 قطع صدا';
-            btn.classList.remove('muted');
-        }
-    }
-
-    // نمایش/مخفی نوار پیام‌ها
-    const ticker = document.getElementById('chatTicker');
-    if (ticker) {
-        if (chatSettings.ticker) {
-            ticker.classList.remove('hidden');
-        } else {
-            ticker.classList.add('hidden');
-        }
-    }
-}
-
-function toggleSoundMute() {
-    chatSettings.muted = !chatSettings.muted;
-    try {
-        localStorage.setItem('classroom_chat_settings', JSON.stringify(chatSettings));
-    } catch (e) {}
-    applyChatSettingsUI();
-    console.log('🔊 Muted:', chatSettings.muted);
-}
-
-// ═══════════════════════════════════════════
-//              Play Ding Sound
-// ═══════════════════════════════════════════
-async function playDing(isTest = false) {
-    if (!isTest && (!chatSettings.sound || chatSettings.muted)) return;
-
-    // ۱. تلاش برای فایل خارجی
-    try {
-        if (!notificationAudio) {
-            notificationAudio = new Audio('notification.mp3');
-            notificationAudio.volume = 0.5;
-        }
-        notificationAudio.currentTime = 0;
-        await notificationAudio.play();
-        console.log('🔔 Played from file');
-        return;
-    } catch (e) {
-        // فایل نیست، تولید می‌کنیم
-    }
-
-    // ۲. تولید صدا با Web Audio API
-    playGeneratedDing();
-}
-
-function playGeneratedDing() {
-    try {
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        
-        // Resume اگر معلق است (برای autoplay policy)
-        if (audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-
-        const now = audioContext.currentTime;
-
-        // صدای اول (بالا)
-        const osc1 = audioContext.createOscillator();
-        const gain1 = audioContext.createGain();
-        osc1.connect(gain1);
-        gain1.connect(audioContext.destination);
-        osc1.frequency.value = 880;
-        osc1.type = 'sine';
-        gain1.gain.setValueAtTime(0.25, now);
-        gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        osc1.start(now);
-        osc1.stop(now + 0.4);
-
-        // صدای دوم (پایین)
-        const osc2 = audioContext.createOscillator();
-        const gain2 = audioContext.createGain();
-        osc2.connect(gain2);
-        gain2.connect(audioContext.destination);
-        osc2.frequency.value = 660;
-        osc2.type = 'sine';
-        gain2.gain.setValueAtTime(0.2, now + 0.12);
-        gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.12 + 0.3);
-        osc2.start(now + 0.12);
-        osc2.stop(now + 0.12 + 0.3);
-
-        console.log('🔔 Played generated ding');
-    } catch (e) {
-        console.error('❌ Audio error:', e);
-    }
-}
-
-// ═══════════════════════════════════════════
-//              Chat Ticker (Header)
-// ═══════════════════════════════════════════
-function updateChatTicker() {
-    const ticker = document.getElementById('chatTicker');
-    if (!ticker) return;
-
-    if (!chatSettings.ticker) {
-        ticker.classList.add('hidden');
-        return;
-    }
-
-    // اگر پیامی نیست
-    if (lastMessages.length === 0) {
-        ticker.classList.add('hidden');
-        return;
-    }
-
-    ticker.classList.remove('hidden');
-
-    // نمایش ۳ پیام آخر (خط ۱ = قدیمی‌تر، خط ۳ = جدیدتر)
-    const lines = [
-        document.getElementById('tickerLine1'),
-        document.getElementById('tickerLine2'),
-        document.getElementById('tickerLine3')
-    ];
-
-    // مرتب‌سازی: از قدیمی به جدید (تا خط ۳ جدیدترین باشد)
-    const displayMessages = lastMessages.slice(-3);
-
-    lines.forEach((line, idx) => {
-        if (!line) return;
-        const msg = displayMessages[idx];
-        if (msg) {
-            line.innerHTML = `<span class="ticker-user">💬 ${escapeHtml(msg.user)}:</span> <span class="ticker-message">${escapeHtml(msg.message)}</span>`;
-            line.style.display = 'flex';
-        } else {
-            line.innerHTML = '';
-            line.style.display = 'none';
-        }
-    });
-}
-
-function addMessageToTicker(user, message, time) {
-    lastMessages.push({ user, message, time });
-    // فقط ۳ پیام آخر را نگه دار
-    if (lastMessages.length > 3) {
-        lastMessages = lastMessages.slice(-3);
-    }
-    updateChatTicker();
-}
-
-// ═══════════════════════════════════════════
-//              Chat Notification Icon
-// ═══════════════════════════════════════════
-function setChatIconNotify(hasNew) {
-    const icon = document.getElementById('triggerChat');
-    if (!icon) return;
-
-    if (hasNew && chatSettings.icon && !chatSidebarOpen) {
-        icon.classList.add('notify');
-    } else {
-        icon.classList.remove('notify');
-    }
-}
-
-function markChatAsRead() {
-    unreadCount = 0;
-    setChatIconNotify(false);
-}
-
-const modeNames = { grid: 'Grid', camera: 'دوربین معلم', whiteboard: 'تخته سفید', screen: 'اشتراک صفحه' };
-const modeIcons = { grid: '🎬', camera: '📹', whiteboard: '🎨', screen: '🖥️' };
-
-// ═══════════════════════════════════════════
-//              Join Room
-// ═══════════════════════════════════════════
-async function joinRoom() {
-    roomId = document.getElementById('inputRoomId').value.trim();
-    userName = document.getElementById('inputUserName').value.trim();
-    userRole = document.getElementById('inputRole').value;
-
-    if (!roomId || !userName) { alert('لطفاً همه فیلدها را پر کنید'); return; }
-
-    document.getElementById('joinModal').classList.add('hidden');
-    document.getElementById('app').classList.add('visible');
-    document.getElementById('displayRoomId').textContent = roomId;
-    document.getElementById('infoRoomId').textContent = roomId;
-    document.getElementById('infoRole').textContent = userRole === 'teacher' ? '👨‍🏫 معلم' : '👨‍🎓 دانش‌آموز';
-
-    document.querySelectorAll('.teacher-only').forEach(el => {
-        el.style.display = (userRole === 'teacher') ? '' : 'none';
-    });
-
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480, facingMode: 'user' },
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
-        document.getElementById('localVideo').srcObject = localStream;
-        document.getElementById('localLabel').textContent = `🎥 ${escapeHtml(userName)} (شما)`;
-        if (userRole === 'teacher') document.getElementById('localLabel').classList.add('teacher');
-        console.log('✅ دوربین فعال شد');
-    } catch (e) {
-        console.error('❌', e);
-        let msg = '⚠️ دسترسی به دوربین/میکروفن داده نشد\n';
-        if (e.name === 'NotAllowedError') msg += 'شما اجازه نداده‌اید.';
-        else if (e.name === 'NotFoundError') msg += 'دوربین یافت نشد.';
-        else msg += e.message;
-        alert(msg);
-    }
-
-    connectWS();
-}
-
-// ═══════════════════════════════════════════
-//              WebSocket
-// ═══════════════════════════════════════════
-function connectWS() {
-    try {
-        ws = new WebSocket(WS_URL);
-        ws.onopen = () => {
-            console.log('✅ WS connected');
-            document.getElementById('connectionStatus').textContent = 'آنلاین';
-            document.getElementById('connectionStatus').className = 'connection-status online';
-            document.getElementById('infoConnection').textContent = 'آنلاین';
-            document.getElementById('infoConnection').style.color = '#4CAF50';
-
-            ws.send(JSON.stringify({
-                type: 'join', room_id: roomId, user_id: userId,
-                user_name: userName, role: userRole
-            }));
-            reconnectAttempts = 0;
-            addSystemMessage('✅ به کلاس متصل شدید');
-        };
-        ws.onmessage = (e) => {
-            try { handleMessage(JSON.parse(e.data)); }
-            catch (err) { console.error('Msg parse:', err); }
-        };
-        ws.onclose = () => {
-            document.getElementById('connectionStatus').textContent = 'قطع';
-            document.getElementById('connectionStatus').className = 'connection-status offline';
-            document.getElementById('infoConnection').textContent = 'قطع';
-            document.getElementById('infoConnection').style.color = '#f44336';
-            if (!intentionalClose && reconnectAttempts < 5) {
-                reconnectAttempts++;
-                setTimeout(connectWS, 2000);
-            }
-        };
-        ws.onerror = (e) => console.error('WS:', e);
-    } catch (e) { console.error('Connect:', e); }
-}
-
-// ═══════════════════════════════════════════
-//              Message Handler
-// ═══════════════════════════════════════════
-function handleMessage(data) {
-    switch (data.type) {
-        case 'room_info':
-            if (data.data) {
-                if (data.data.students) {
-                    data.data.students.forEach(s => {
-                        remoteNames[s.id] = s.name;
-                        if (s.id !== userId) createPeerConnection(s.id, s.name);
-                    });
-                }
-                if (data.data.teacher && data.data.teacher.id !== userId) {
-                    remoteNames[data.data.teacher.id] = data.data.teacher.name;
-                    remoteRoles[data.data.teacher.id] = 'teacher';
-                    createPeerConnection(data.data.teacher.id, data.data.teacher.name);
-                }
-                if (data.data.members) { roomMembers = data.data.members; updateParticipantsList(); }
-                if (data.data.currentMode) { currentMode = data.data.currentMode; applyMode(currentMode); }
-                if (data.data.whiteboard) { wbPermissions = data.data.whiteboard; applyWBPermissions(); }
-                document.getElementById('onlineCount').textContent = data.data.online_count || 0;
-                document.getElementById('infoOnlineCount').textContent = data.data.online_count || 0;
-            }
-            break;
-
-        case 'whiteboard': handleWhiteboard(data.data); break;
-
-        case 'user_joined':
-            addSystemMessage(`🔵 ${data.user_name} وارد شد`);
-            document.getElementById('onlineCount').textContent = data.online_count;
-            document.getElementById('infoOnlineCount').textContent = data.online_count;
-            remoteNames[data.user_id] = data.user_name;
-            if (data.role) remoteRoles[data.user_id] = data.role;
-            if (data.user_id !== userId) createPeerConnection(data.user_id, data.user_name);
-            break;
-
-        case 'user_left':
-            addSystemMessage(`🔴 ${data.user_name || 'کاربر'} خارج شد`);
-            removePeerConnection(data.user_id);
-            delete remoteNames[data.user_id];
-            delete remoteRoles[data.user_id];
-            break;
-
-        case 'members_update':
-            roomMembers = data.members || [];
-            document.getElementById('onlineCount').textContent = data.online_count || roomMembers.length;
-            document.getElementById('infoOnlineCount').textContent = data.online_count || roomMembers.length;
-            updateParticipantsList();
-            break;
-
-        case 'chat_message':
-            addChatMessage(data.user, data.message, data.time);
-            // ⭐ اگر پیام از خودم نیست:
-            if (data.user !== userName) {
-                addMessageToTicker(data.user, data.message, data.time);
-                if (!chatSidebarOpen) {
-                    unreadCount++;
-                    setChatIconNotify(true);
-                    playDing();
-                }
-            }
-            break;
-
-        case 'hand_raised':
-            addSystemMessage(`✋ ${data.user_name} سوال دارد`);
-            highlightHandRaised(data.user_name);
-            break;
-
-        case 'hand_lowered':
-            addSystemMessage(`✋ یک کاربر سوال خود را برداشت`);
-            removeHandHighlights();
-            break;
-
-        case 'signal': handleSignal(data); break;
-
-        case 'mode_changed':
-            currentMode = data.mode;
-            applyMode(currentMode);
-            addSystemMessage(`🎬 حالت → "${modeNames[data.mode]}"`);
-            break;
-
-        case 'whiteboard_permissions_changed':
-            wbPermissions = data.whiteboard;
-            applyWBPermissions();
-            addSystemMessage(`⚙️ دسترسی تخته سفید به‌روزرسانی شد`);
-            break;
-
-        case 'screen_share_started':
-            addSystemMessage(`🖥️ ${data.user_name} صفحه‌اش را اشتراک گذاشت`);
-            break;
-
-        case 'screen_share_stopped':
-            addSystemMessage(`🖥️ ${data.user_name} اشتراک را قطع کرد`);
-            break;
-
-        case 'pong': break;
-    }
-}
-
-// ═══════════════════════════════════════════
-//              Sidebar Management
-// ═══════════════════════════════════════════
-function toggleSidebar(name) {
-    if (activeSidebar === name) {
-        closeSidebar(name);
-    } else {
-        openSidebar(name);
-    }
-}
-
-function hoverSidebar(name) {
-    // لغو timer بسته شدن این سایدبار
-    if (sidebarCloseTimers[name]) {
-        clearTimeout(sidebarCloseTimers[name]);
-        delete sidebarCloseTimers[name];
-    }
-    openSidebar(name);
-}
-
-function openSidebar(name) {
-    // ⭐ اگر سایدبار چت باز می‌شود، پیام‌ها را خوانده‌شده کن
-    if (name === 'chat') {
-        chatSidebarOpen = true;
-        setTimeout(markChatAsRead, 500);
-    }
-
-    // بستن سایدبار قبلی
-    if (activeSidebar && activeSidebar !== name) {
-        closeSidebar(activeSidebar);
-    }
-
-    const panel = document.getElementById('sidebar' + name.charAt(0).toUpperCase() + name.slice(1));
-    const trigger = document.getElementById('trigger' + name.charAt(0).toUpperCase() + name.slice(1));
-
-    if (panel) panel.classList.add('open');
-    if (trigger) trigger.classList.add('active');
-    activeSidebar = name;
-}
-
-function closeSidebar(name) {
-    const panel = document.getElementById('sidebar' + name.charAt(0).toUpperCase() + name.slice(1));
-    const trigger = document.getElementById('trigger' + name.charAt(0).toUpperCase() + name.slice(1));
-
-    if (panel) panel.classList.remove('open');
-    if (trigger) {
-        trigger.classList.remove('active');
-        // ⭐ آیکون notify را حفظ کن (اگر پیام خوانده‌نشده هست)
-        if (name === 'chat' && unreadCount > 0) {
-            // notify را نگه دار
-        }
-    }
-    if (activeSidebar === name) activeSidebar = null;
-
-    // ⭐ اگر سایدبار چت بسته شد
-    if (name === 'chat') {
-        chatSidebarOpen = false;
-    }
-}
-
-function scheduleClose(name) {
-    // بستن با تأخیر — تا اگر موس دوباره برگشت، بسته نشود
-    if (sidebarCloseTimers[name]) clearTimeout(sidebarCloseTimers[name]);
-    sidebarCloseTimers[name] = setTimeout(() => {
-        closeSidebar(name);
-        delete sidebarCloseTimers[name];
-    }, 300);
-}
-
-// ═══════════════════════════════════════════
-//              Participants List
-// ═══════════════════════════════════════════
-function updateParticipantsList() {
-    const list = document.getElementById('participantsList');
-    if (!list) return;
-    list.innerHTML = '';
-
-    if (roomMembers.length === 0) {
-        list.innerHTML = '<div style="color:#666;font-size:10pt;text-align:center;padding:20px;">هیچ‌کس حاضر نیست</div>';
-        return;
-    }
-
-    roomMembers.forEach(m => {
-        const item = document.createElement('div');
-        item.className = 'participant-item' + (m.role === 'teacher' ? ' teacher' : '');
-        item.innerHTML = `
-            <span class="role-icon">${m.role === 'teacher' ? '👨‍🏫' : '👨‍🎓'}</span>
-            <span class="name">${escapeHtml(m.name)}${m.id === userId ? ' (شما)' : ''}</span>
-            <span class="status">🟢</span>
-        `;
-        list.appendChild(item);
-    });
-}
-
-// ═══════════════════════════════════════════
-//              WebRTC
-// ═══════════════════════════════════════════
-async function createPeerConnection(peerId, peerName) {
-    if (peerConnections[peerId]) return peerConnections[peerId];
-
-    const pc = new RTCPeerConnection(rtcConfig);
-    peerConnections[peerId] = pc;
-    pendingCandidates[peerId] = [];
-
-    if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-    pc.ontrack = (event) => {
-        if (!remoteStreams[peerId]) remoteStreams[peerId] = new MediaStream();
-        event.streams[0].getTracks().forEach(t => remoteStreams[peerId].addTrack(t));
-        showRemoteVideo(peerId, remoteNames[peerId] || peerName, remoteStreams[peerId]);
-    };
-
-    pc.onicecandidate = (e) => {
-        if (e.candidate) sendSignal(peerId, { type: 'ice-candidate', candidate: e.candidate });
-    };
-
-    pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-            removePeerConnection(peerId);
-        }
-    };
-
-    const myNum = parseFloat(userId.split('_').pop()) || 0;
-    const peerNum = parseFloat(String(peerId).split('_').pop()) || 0;
-
-    if (myNum > peerNum) {
-        try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            sendSignal(peerId, { type: 'offer', sdp: pc.localDescription });
-        } catch (e) { console.error('Offer:', e); }
-    }
-
-    return pc;
-}
-
-function removePeerConnection(peerId) {
-    if (peerConnections[peerId]) { peerConnections[peerId].close(); delete peerConnections[peerId]; }
-    if (remoteStreams[peerId]) { remoteStreams[peerId].getTracks().forEach(t => t.stop()); delete remoteStreams[peerId]; }
-    delete pendingCandidates[peerId];
-    const c = document.getElementById(`video_${peerId}`);
-    if (c) c.remove();
-}
-
-function sendSignal(targetId, data) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'signal', target: targetId, data }));
-    }
-}
-
-async function handleSignal(data) {
-    const fromId = data.from;
-    let pc = peerConnections[fromId];
-    if (!pc) pc = await createPeerConnection(fromId, data.from_name);
-
-    try {
-        if (data.data.type === 'offer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.data.sdp));
-            if (pendingCandidates[fromId]) {
-                for (const c of pendingCandidates[fromId]) {
-                    try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
-                }
-                pendingCandidates[fromId] = [];
-            }
-            const ans = await pc.createAnswer();
-            await pc.setLocalDescription(ans);
-            sendSignal(fromId, { type: 'answer', sdp: pc.localDescription });
-        } else if (data.data.type === 'answer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.data.sdp));
-            if (pendingCandidates[fromId]) {
-                for (const c of pendingCandidates[fromId]) {
-                    try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
-                }
-                pendingCandidates[fromId] = [];
-            }
-        } else if (data.data.type === 'ice-candidate') {
-            if (data.data.candidate) {
-                if (!pc.remoteDescription || !pc.remoteDescription.type) {
-                    pendingCandidates[fromId].push(data.data.candidate);
-                } else {
-                    try { await pc.addIceCandidate(new RTCIceCandidate(data.data.candidate)); } catch(e){}
-                }
-            }
-        }
-    } catch (e) { console.error('Signal:', e); }
-}
-
-function showRemoteVideo(peerId, peerName, stream) {
-    let container = document.getElementById(`video_${peerId}`);
-    if (container) {
-        const v = container.querySelector('video');
-        if (v) v.srcObject = stream;
-    } else {
-        container = document.createElement('div');
-        container.className = 'video-container';
-        container.id = `video_${peerId}`;
-        const role = remoteRoles[peerId] === 'teacher' ? '👨‍🏫' : '👤';
-        const labelClass = remoteRoles[peerId] === 'teacher' ? 'user-label teacher' : 'user-label';
-        container.innerHTML = `<video autoplay playsinline></video><div class="${labelClass}">${role} ${escapeHtml(peerName)}</div>`;
-        container.querySelector('video').srcObject = stream;
-        document.getElementById('videosGrid').appendChild(container);
-    }
-    if (remoteRoles[peerId] === 'teacher') {
-        const cv = document.getElementById('cameraViewVideo');
-        if (cv) cv.srcObject = stream;
-    }
-}
-
-// ═══════════════════════════════════════════
-//              Mode Management
-// ═══════════════════════════════════════════
-function setMode(mode) {
-    if (userRole !== 'teacher') return;
-    if (!['grid', 'camera', 'whiteboard', 'screen'].includes(mode)) return;
-    currentMode = mode;
-    applyMode(mode);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'set_mode', mode }));
-    }
-}
-
-function applyMode(mode) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    const viewId = mode + 'View';
-    const viewEl = document.getElementById(viewId);
-    if (viewEl) viewEl.classList.add('active');
-
-    const indicator = document.getElementById('modeIndicator');
-    indicator.textContent = `${modeIcons[mode]} ${modeNames[mode]}`;
-    indicator.className = 'mode-indicator ' + mode;
-
-    // به‌روزرسانی دکمه‌های mode در سایدبار
-    document.querySelectorAll('.mode-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.mode === mode);
-    });
-
-    if (mode === 'whiteboard') {
-        if (!canViewWhiteboard()) {
-            document.getElementById('noAccessMsg').style.display = 'block';
-        } else {
-            document.getElementById('noAccessMsg').style.display = 'none';
-            setTimeout(() => {
-                if (canvas) {
-                    const cont = canvas.parentElement;
-                    canvas.width = cont.clientWidth;
-                    canvas.height = cont.clientHeight;
-                    if (ctx) {
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        replayHistory();
-                    }
-                }
-            }, 100);
-        }
-        setTimeout(applyWBPermissions, 150);
-    }
-
-    if (mode === 'camera' && userRole === 'teacher' && localStream) {
-        document.getElementById('cameraViewVideo').srcObject = localStream;
-    }
-}
-
-// ═══════════════════════════════════════════
-//              Whiteboard Permissions
-// ═══════════════════════════════════════════
-function canViewWhiteboard() {
-    if (userRole === 'teacher') return true;
-    if (wbPermissions.viewMode === 'all') return true;
-    if (wbPermissions.viewMode === 'teacher') return false;
-    if (wbPermissions.viewMode === 'selected') return wbPermissions.viewers.includes(userId);
-    return false;
-}
-
-function canDrawWhiteboard() {
-    if (userRole === 'teacher') return true;
-    if (wbPermissions.drawMode === 'all') return true;
-    if (wbPermissions.drawMode === 'teacher') return false;
-    if (wbPermissions.drawMode === 'selected') return wbPermissions.drawers.includes(userId);
-    return false;
-}
-
-function applyWBPermissions() {
-    const canView = canViewWhiteboard();
-    const canDraw = canDrawWhiteboard();
-
-    if (!canView && currentMode === 'whiteboard') {
-        document.getElementById('noAccessMsg').style.display = 'block';
-        return;
-    } else {
-        document.getElementById('noAccessMsg').style.display = 'none';
-    }
-
-    if (canvas) {
-        if (canDraw) {
-            canvas.style.pointerEvents = 'auto';
-            canvas.style.cursor = 'crosshair';
-            canvas.style.opacity = '1';
-        } else {
-            canvas.style.pointerEvents = 'none';
-            canvas.style.cursor = 'not-allowed';
-            canvas.style.opacity = '0.75';
-        }
-    }
-
-    const toolsBar = document.getElementById('wbToolsBar');
-    if (toolsBar && userRole !== 'teacher') {
-        toolsBar.style.opacity = canDraw ? '1' : '0.4';
-        toolsBar.style.pointerEvents = canDraw ? 'auto' : 'none';
-    }
-}
-
-// ═══════════════════════════════════════════
-//              Permissions Modal
-// ═══════════════════════════════════════════
-function openPermissionsModal() {
-    if (userRole !== 'teacher') return;
-
-    document.querySelectorAll('input[name="viewMode"]').forEach(r => r.checked = r.value === wbPermissions.viewMode);
-    document.querySelectorAll('input[name="drawMode"]').forEach(r => r.checked = r.value === wbPermissions.drawMode);
-
-    buildUserCheckboxes('viewersCheckboxes', wbPermissions.viewers, 'viewer');
-    buildUserCheckboxes('drawersCheckboxes', wbPermissions.drawers, 'drawer');
-
-    toggleUserList('viewersList', wbPermissions.viewMode === 'selected');
-    toggleUserList('drawersList', wbPermissions.drawMode === 'selected');
-
-    document.querySelectorAll('input[name="viewMode"]').forEach(r => {
-        r.onchange = () => toggleUserList('viewersList', r.value === 'selected');
-    });
-    document.querySelectorAll('input[name="drawMode"]').forEach(r => {
-        r.onchange = () => toggleUserList('drawersList', r.value === 'selected');
-    });
-
-    document.getElementById('permissionsModal').classList.add('show');
-}
-
-function closePermissionsModal() {
-    document.getElementById('permissionsModal').classList.remove('show');
-}
-
-function toggleUserList(id, visible) {
-    const el = document.getElementById(id);
-    if (visible) el.classList.add('visible');
-    else el.classList.remove('visible');
-}
-
-function buildUserCheckboxes(containerId, selectedIds, role) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-
-    const students = roomMembers.filter(m => m.role === 'student' && m.id !== userId);
-
-    if (students.length === 0) {
-        container.innerHTML = '<div style="color:#666;font-size:10pt;">هیچ دانش‌آموزی حاضر نیست</div>';
-        return;
-    }
-
-    students.forEach(s => {
-        const label = document.createElement('label');
-        label.className = 'checkbox-item';
-        const checked = selectedIds.includes(s.id);
-        label.innerHTML = `<input type="checkbox" data-user-id="${s.id}" data-role="${role}" ${checked ? 'checked' : ''}><span>👨‍🎓 ${escapeHtml(s.name)}</span>`;
-        container.appendChild(label);
-    });
-}
-
-function savePermissions() {
-    const viewMode = document.querySelector('input[name="viewMode"]:checked').value;
-    const drawMode = document.querySelector('input[name="drawMode"]:checked').value;
-
-    const viewers = [];
-    const drawers = [];
-    document.querySelectorAll('input[data-role="viewer"]:checked').forEach(cb => viewers.push(cb.dataset.userId));
-    document.querySelectorAll('input[data-role="drawer"]:checked').forEach(cb => drawers.push(cb.dataset.userId));
-
-    if (viewMode === 'selected' && viewers.length === 0) { alert('⚠️ حداقل یک بیننده انتخاب کنید'); return; }
-    if (drawMode === 'selected' && drawers.length === 0) { alert('⚠️ حداقل یک نویسنده انتخاب کنید'); return; }
-
-    wbPermissions = { viewMode, viewers, drawMode, drawers };
-
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-            type: 'set_whiteboard_permissions',
-            viewMode, viewers, drawMode, drawers
-        }));
-    }
-
-    applyWBPermissions();
-    addSystemMessage('⚙️ دسترسی‌ها ذخیره شد');
-    closePermissionsModal();
-}
-
-// ═══════════════════════════════════════════
-//              Chat
-// ═══════════════════════════════════════════
-function sendChat() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
-    if (!msg || !ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: 'chat', message: msg }));
-    input.value = '';
-}
-
-function addChatMessage(user, message, time) {
-    const c = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = 'chat-msg';
-    div.innerHTML = `<span class="user">${escapeHtml(user)}:</span> <span class="time">${escapeHtml(time || '')}</span><br>${escapeHtml(message)}`;
-    c.appendChild(div);
-    div.scrollIntoView({ behavior: 'smooth' });
-}
-
-function addSystemMessage(message) {
-    const c = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = 'chat-msg system';
-    div.textContent = message;
-    c.appendChild(div);
-    div.scrollIntoView({ behavior: 'smooth' });
-}
-
-function escapeHtml(t) {
-    if (t == null) return '';
-    const d = document.createElement('div');
-    d.textContent = String(t);
-    return d.innerHTML;
-}
-
-// ═══════════════════════════════════════════
-//              Controls
-// ═══════════════════════════════════════════
-function toggleMic() {
-    micOn = !micOn;
-    if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
-    const btn = document.getElementById('btnMic');
-    btn.classList.toggle('active', micOn);
-    btn.classList.toggle('off', !micOn);
-    document.getElementById('localMicStatus').textContent = micOn ? '🎤' : '🔇';
-}
-
-function toggleCam() {
-    camOn = !camOn;
-    if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camOn);
-    const btn = document.getElementById('btnCam');
-    btn.classList.toggle('active', camOn);
-    btn.classList.toggle('off', !camOn);
-}
-
-function toggleHand() {
-    handRaised = !handRaised;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: handRaised ? 'hand_raise' : 'hand_lower' }));
-    }
-    const btn = document.getElementById('btnHand');
-    btn.classList.toggle('raised', handRaised);
-    const lbl = document.getElementById('localLabel');
-    if (lbl) lbl.classList.toggle('hand-raised', handRaised);
-}
-
-function highlightHandRaised(name) {
-    document.querySelectorAll('.user-label').forEach(lbl => {
-        if (lbl.textContent.includes(name)) {
-            lbl.classList.add('hand-raised');
-            const p = lbl.parentElement;
-            if (!p.querySelector('.hand-indicator')) {
-                const h = document.createElement('div');
-                h.className = 'hand-indicator';
-                h.textContent = '✋';
-                p.appendChild(h);
-            }
-        }
-    });
-}
-
-function removeHandHighlights() {
-    document.querySelectorAll('.user-label.hand-raised').forEach(l => l.classList.remove('hand-raised'));
-    document.querySelectorAll('.hand-indicator').forEach(h => h.remove());
-}
-
-// ═══════════════════════════════════════════
-//              Whiteboard Toggle
-// ═══════════════════════════════════════════
-function toggleWhiteboard() {
-    if (currentMode === 'whiteboard') {
-        if (userRole === 'teacher') setMode('grid');
-    } else {
-        if (userRole === 'teacher') {
-            setMode('whiteboard');
-        } else {
-            addSystemMessage('⚠️ فقط معلم می‌تواند تخته را فعال کند');
-        }
-    }
-}
-
-// ═══════════════════════════════════════════
-//              Screen Share
-// ═══════════════════════════════════════════
-async function toggleScreenShare() {
-    if (screenSharing) stopScreenShare();
-    else await startScreenShare();
-}
-
-async function startScreenShare() {
-    if (userRole !== 'teacher') {
-        addSystemMessage('⚠️ فقط معلم می‌تواند صفحه را اشتراک بگذارد');
-        return;
-    }
-    try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: { cursor: 'always', frameRate: 15 }, audio: false
-        });
-        screenSharing = true;
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'screen_share_start' }));
-        }
-        const btn = document.getElementById('btnScreen');
-        btn.classList.add('off');
-
-        const track = screenStream.getVideoTracks()[0];
-        for (const pc of Object.values(peerConnections)) {
-            const s = pc.getSenders().find(x => x.track && x.track.kind === 'video');
-            if (s) await s.replaceTrack(track);
-        }
-        document.getElementById('screenViewVideo').srcObject = screenStream;
-        setMode('screen');
-        track.onended = () => stopScreenShare();
-        addSystemMessage('🖥️ اشتراک صفحه شروع شد');
-    } catch (e) {
-        console.error('❌', e);
-        screenSharing = false;
-        screenStream = null;
-        addSystemMessage(e.name === 'NotAllowedError' ? '⚠️ لغو شد' : '⚠️ ' + e.message);
-    }
-}
-
-function stopScreenShare() {
-    if (!screenSharing) return;
-    if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
-    screenSharing = false;
-    const btn = document.getElementById('btnScreen');
-    btn.classList.remove('off');
-    if (localStream) {
-        const cam = localStream.getVideoTracks()[0];
-        for (const pc of Object.values(peerConnections)) {
-            const s = pc.getSenders().find(x => x.track && x.track.kind === 'video');
-            if (s && cam) s.replaceTrack(cam);
-        }
-    }
-    document.getElementById('screenViewVideo').srcObject = null;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'screen_share_stop' }));
-    }
-    if (userRole === 'teacher') setMode('grid');
-    addSystemMessage('🖥️ اشتراک صفحه متوقف شد');
-}
-
-// ═══════════════════════════════════════════
-//              Whiteboard Core
-// ═══════════════════════════════════════════
-function initWhiteboard() {
-    canvas = document.getElementById('whiteboardCanvas');
-    if (!canvas) return;
-    ctx = canvas.getContext('2d');
-
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', stopDrawing);
-    canvas.addEventListener('dblclick', handleDoubleClick);
-
-    window.addEventListener('resize', resizeCanvas);
-}
-
-function resizeCanvas() {
-    if (!canvas || currentMode !== 'whiteboard') return;
-    const cont = canvas.parentElement;
-    canvas.width = cont.clientWidth;
-    canvas.height = cont.clientHeight;
-    if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        replayHistory();
-    }
-}
-
-function startDrawing(e) {
-    if (currentTool === 'text') return;
-    if (!canDrawWhiteboard()) return;
-    isDrawing = true;
-    const r = canvas.getBoundingClientRect();
-    lastX = (e.clientX - r.left) / r.width;
-    lastY = (e.clientY - r.top) / r.height;
-}
-
-function draw(e) {
-    if (!isDrawing || !canDrawWhiteboard()) return;
-    const r = canvas.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
-    const y = (e.clientY - r.top) / r.height;
-
-    drawLine(lastX * canvas.width, lastY * canvas.height, x * canvas.width, y * canvas.height, currentColor, currentBrushSize, currentTool);
-
-    sendWhiteboard({
-        type: 'draw', fromX: lastX, fromY: lastY, toX: x, toY: y,
-        color: currentColor, size: currentBrushSize, tool: currentTool,
-        author: userName
-    });
-
-    lastX = x;
-    lastY = y;
-}
-
-function stopDrawing() { isDrawing = false; }
-
-function handleTouchStart(e) {
-    if (currentTool === 'text' || !canDrawWhiteboard()) return;
-    e.preventDefault();
-    if (e.touches.length > 0) {
-        isDrawing = true;
-        const r = canvas.getBoundingClientRect();
-        lastX = (e.touches[0].clientX - r.left) / r.width;
-        lastY = (e.touches[0].clientY - r.top) / r.height;
-    }
-}
-
-function handleTouchMove(e) {
-    if (currentTool === 'text' || !canDrawWhiteboard()) return;
-    e.preventDefault();
-    if (!isDrawing || e.touches.length === 0) return;
-    const r = canvas.getBoundingClientRect();
-    const x = (e.touches[0].clientX - r.left) / r.width;
-    const y = (e.touches[0].clientY - r.top) / r.height;
-    drawLine(lastX * canvas.width, lastY * canvas.height, x * canvas.width, y * canvas.height, currentColor, currentBrushSize, currentTool);
-    sendWhiteboard({
-        type: 'draw', fromX: lastX, fromY: lastY, toX: x, toY: y,
-        color: currentColor, size: currentBrushSize, tool: currentTool,
-        author: userName
-    });
-    lastX = x;
-    lastY = y;
-}
-
-function handleDoubleClick(e) {
-    if (!canDrawWhiteboard()) return;
-    e.preventDefault();
-    const r = canvas.getBoundingClientRect();
-    showTextInput((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-}
-
-function drawLine(x1, y1, x2, y2, color, size, tool) {
-    if (!ctx) return;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    if (tool === 'eraser') {
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = size * 5;
-    } else {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = size;
-    }
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-}
-
-function drawText(x, y, text, color, size) {
-    if (!ctx || !text) return;
-    ctx.fillStyle = color;
-    ctx.font = `${size}px Tahoma`;
-    ctx.textBaseline = 'top';
-    ctx.fillText(text, x, y);
-}
-
-// ═══════════════════════════════════════════
-//              Text Tool
-// ═══════════════════════════════════════════
-function showTextInput(nx, ny) {
-    if (!canDrawWhiteboard()) return;
-    if (pendingTextInput) { pendingTextInput.remove(); pendingTextInput = null; }
-
-    const r = canvas.getBoundingClientRect();
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'متن...';
-    input.style.cssText = `position:absolute;left:${nx * r.width}px;top:${ny * r.height}px;background:rgba(255,255,255,0.95);border:2px solid #e94560;padding:5px 10px;font-size:16pt;font-family:Tahoma;z-index:100;min-width:200px;border-radius:4px;outline:none;`;
-    canvas.parentElement.appendChild(input);
-    input.focus();
-    pendingTextInput = input;
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const text = input.value.trim();
-            if (text) {
-                drawText(nx * canvas.width, ny * canvas.height, text, currentColor, currentBrushSize * 8);
-                sendWhiteboard({
-                    type: 'text', x: nx, y: ny, text, color: currentColor,
-                    size: currentBrushSize, author: userName
-                });
-            }
-            input.remove();
-            pendingTextInput = null;
-        } else if (e.key === 'Escape') {
-            input.remove();
-            pendingTextInput = null;
-        }
-    });
-
-    input.addEventListener('blur', () => {
-        setTimeout(() => {
-            if (pendingTextInput === input) { input.remove(); pendingTextInput = null; }
-        }, 200);
-    });
-}
-
-// ═══════════════════════════════════════════
-//              Tools
-// ═══════════════════════════════════════════
-function setColor(color, el) {
-    currentColor = color;
-    if (currentTool !== 'pen') { setTool('pen'); }
-    document.querySelectorAll('.wb-color').forEach(e => e.classList.remove('active'));
-    el.classList.add('active');
-}
-
-function setBrushSize(size) {
-    currentBrushSize = parseInt(size);
-    document.getElementById('brushSizeLabel').textContent = size;
-}
-
-function setTool(tool) {
-    currentTool = tool;
-    ['pen', 'eraser', 'text'].forEach(t => {
-        const btn = document.getElementById('tool' + t.charAt(0).toUpperCase() + t.slice(1));
-        if (btn) btn.classList.toggle('active', t === tool);
-    });
-    if (canvas) canvas.style.cursor = tool === 'text' ? 'text' : 'crosshair';
-}
-
-function clearWhiteboard() {
-    if (!canDrawWhiteboard() || !ctx) return;
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    sendWhiteboard({ type: 'clear', author: userName });
-    whiteboardHistory = [];
-    addSystemMessage('🗑️ تخته پاک شد');
-}
-
-// ═══════════════════════════════════════════
-//              Whiteboard Network
-// ═══════════════════════════════════════════
-function sendWhiteboard(data) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'whiteboard', data }));
-    }
-}
-
-function handleWhiteboard(data) {
-    if (!data) return;
-
-    if (data.type !== 'clear') {
-        whiteboardHistory.push(data);
-        if (whiteboardHistory.length > 5000) whiteboardHistory.shift();
-    } else {
-        whiteboardHistory = [];
-    }
-
-    if (currentMode !== 'whiteboard' || !ctx) return;
-    if (!canViewWhiteboard()) return;
-
-    if (data.type === 'draw') {
-        drawLine(
-            data.fromX * canvas.width, data.fromY * canvas.height,
-            data.toX * canvas.width, data.toY * canvas.height,
-            data.color, data.size, data.tool
-        );
-    } else if (data.type === 'text') {
-        drawText(data.x * canvas.width, data.y * canvas.height, data.text, data.color, data.size * 8);
-    } else if (data.type === 'clear') {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-}
-
-function replayHistory() {
-    if (!ctx || !whiteboardHistory.length) return;
-    whiteboardHistory.forEach(data => {
-        if (data.type === 'draw') {
-            drawLine(
-                data.fromX * canvas.width, data.fromY * canvas.height,
-                data.toX * canvas.width, data.toY * canvas.height,
-                data.color, data.size, data.tool
-            );
-        } else if (data.type === 'text') {
-            drawText(data.x * canvas.width, data.y * canvas.height, data.text, data.color, data.size * 8);
-        } else if (data.type === 'clear') {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-    });
-}
-
-// ═══════════════════════════════════════════
-//              Leave
-// ═══════════════════════════════════════════
-function leaveRoom() {
-    if (!confirm('از کلاس خارج می‌شوید؟')) return;
-    intentionalClose = true;
-    if (screenSharing) stopScreenShare();
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
-    Object.keys(peerConnections).forEach(id => peerConnections[id].close());
-    if (ws) ws.close();
-    location.reload();
-}
-
-// ═══════════════════════════════════════════
-//              Init
-// ═══════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-    initWhiteboard();
-    loadChatSettings();
-    console.log('✅ App v3.4 initialized (chat notifications)');
-    
-    // فعال‌سازی AudioContext با اولین تعامل کاربر
-    document.body.addEventListener('click', function initAudio() {
-        if (!audioContext) {
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {}
-        }
-        if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-        document.body.removeEventListener('click', initAudio);
-    }, { once: true });
-});
-
-// بستن سایدبارها با کلیک خارج
-document.addEventListener('click', (e) => {
-    if (activeSidebar) {
-        const panel = document.getElementById('sidebar' + activeSidebar.charAt(0).toUpperCase() + activeSidebar.slice(1));
-        const trigger = document.getElementById('trigger' + activeSidebar.charAt(0).toUpperCase() + activeSidebar.slice(1));
-        if (panel && !panel.contains(e.target) && trigger && !trigger.contains(e.target)) {
-            closeSidebar(activeSidebar);
-        }
-    }
-});
-
-setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
-}, 30000);
-
-window.addEventListener('beforeunload', () => {
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
-    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-    if (ws && ws.readyState === WebSocket.OPEN) ws.close();
-});
-</script>
+<!-- ⭐ JS خارجی -->
+<script src="js/config.js?v=3.5"></script>
+<script src="js/utils.js?v=3.5"></script>
+<script src="js/storage.js?v=3.5"></script>
+<script src="js/sidebar.js?v=3.5"></script>
+<script src="js/server-settings.js?v=3.5"></script>
+<script src="js/notifications.js?v=3.5"></script>
+<script src="js/whiteboard.js?v=3.5"></script>
+<script src="js/webrtc.js?v=3.5"></script>
+<script src="js/websocket.js?v=3.5"></script>
+<script src="js/ui-controls.js?v=3.5"></script>
+<script src="js/modals.js?v=3.5"></script>
+<script src="js/main.js?v=3.5"></script>
 
 </body>
-</html>   
+</html>

@@ -1,0 +1,192 @@
+/* ═══════════════════════════════════════════ */
+/*              Base Styles                    */
+/*              v3.5                           */
+/* ═══════════════════════════════════════════ */
+
+/* ─── Reset ─── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Tahoma, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background: #1a1a2e;
+    color: #eee;
+    font-size: 11pt;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ─── */
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: bold;
+    line-height: 1.3;
+}
+
+h1 { font-size: 22pt; }
+h2 { font-size: 16pt; }
+h3 { font-size: 12pt; }
+
+p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+a {
+    color: #667eea;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: #e94560;
+}
+
+/* ─── Buttons ─── */
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    transition: all 0.2s;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─── Inputs ─── */
+input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    border: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #556;
+    opacity: 1;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f3460;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e3a5f;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2a4a75;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #1e3a5f #0f3460;
+}
+
+/* ─── Selection ─── */
+::selection {
+    background: #e94560;
+    color: white;
+}
+
+::-moz-selection {
+    background: #e94560;
+    color: white;
+}
+
+/* ─── Focus Visible ─── */
+*:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* ─── Utility Classes ─── */
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: block !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.flex-center {
+    align-items: center;
+    justify-content: center;
+}
+
+.gap-5 { gap: 5px; }
+.gap-10 { gap: 10px; }
+.gap-15 { gap: 15px; }
+
+.mt-5 { margin-top: 5px; }
+.mt-10 { margin-top: 10px; }
+.mt-15 { margin-top: 15px; }
+.mt-20 { margin-top: 20px; }
+
+.mb-5 { margin-bottom: 5px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-15 { margin-bottom: 15px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* ─── Color Variables (اختیاری برای آینده) ─── */
+:root {
+    --color-bg: #1a1a2e;
+    --color-panel: #16213e;
+    --color-panel-dark: #0f3460;
+    --color-panel-light: #1e3a5f;
+    --color-accent: #667eea;
+    --color-accent-dark: #764ba2;
+    --color-danger: #f44336;
+    --color-success: #4CAF50;
+    --color-warning: #FF9800;
+    --color-info: #2196F3;
+    --color-whiteboard: #9C27B0;
+    --color-screen: #FF5722;
+    --color-text: #eee;
+    --color-text-muted: #999;
+    --color-text-dim: #666;
+    --color-primary: #e94560;
+}
