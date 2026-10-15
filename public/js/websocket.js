@@ -26,7 +26,8 @@ function connectWS() {
                 room_id: roomId,
                 user_id: userId,
                 user_name: userName,
-                role: userRole
+                role: userRole,
+                password: pendingRoomPassword || ''    // ⭐ رمز اتاق
             }));
 
             reconnectAttempts = 0;
@@ -92,6 +93,11 @@ function handleMessage(data) {
                 if (data.data.whiteboard) {
                     wbPermissions = data.data.whiteboard;
                     applyWBPermissions();
+                }
+                 // ⭐ امنیت اتاق
+                if (data.data.security) {
+                    roomSecurity = data.data.security;
+                    updateSecurityUI();
                 }
                 document.getElementById('onlineCount').textContent = data.data.online_count || 0;
                 document.getElementById('infoOnlineCount').textContent = data.data.online_count || 0;
@@ -180,6 +186,78 @@ function handleMessage(data) {
 
         case 'screen_share_stopped':
             addSystemMessage(`🖥️ ${data.user_name} اشتراک را قطع کرد`);
+            break;
+
+        // ═══ 🔒 امنیت اتاق ═══
+        case 'security_update':
+            roomSecurity = data.security;
+            updateSecurityUI();
+            
+            if (data.security.hasPassword) {
+                if (data.security.locked) {
+                    addSystemMessage(`🔒 اتاق توسط ${data.by || 'معلم'} قفل شد`);
+                } else if (roomSecurity.hasPassword) {
+                    addSystemMessage(`🔐 رمز اتاق توسط ${data.by || 'معلم'} تعیین شد`);
+                }
+            } else {
+                addSystemMessage(`🔓 رمز اتاق توسط ${data.by || 'معلم'} حذف شد`);
+            }
+            break;
+
+        case 'security_error':
+            alert('⚠️ ' + data.message);
+            break;
+
+        case 'join_failed':
+            console.error('❌ Join failed:', data.reason);
+            
+            let errorMsg = 'خطا در ورود';
+            if (data.reason === 'wrong_password') {
+                errorMsg = '🔐 رمز اتاق اشتباه است';
+            } else if (data.reason === 'room_locked') {
+                errorMsg = '🔒 اتاق توسط معلم قفل شده است';
+            } else if (data.reason === 'too_many_attempts') {
+                errorMsg = '⛔ تعداد تلاش‌های زیاد. ۵ دقیقه صبر کنید';
+            } else if (data.message) {
+                errorMsg = data.message;
+            }
+            
+            alert(errorMsg);
+            
+            // بازگشت به Join Modal
+            document.getElementById('joinModal').classList.remove('hidden');
+            document.getElementById('app').classList.remove('visible');
+            
+            intentionalClose = true;
+            if (ws) ws.close();
+            break;
+
+        case 'room_locked':
+            roomSecurity.locked = true;
+            updateSecurityUI();
+            alert('🔒 اتاق قفل شد');
+            location.reload();
+            break;
+
+        case 'room_unlocked':
+            roomSecurity.locked = false;
+            updateSecurityUI();
+            break;
+
+        // ═══ 🔴 پایان کلاس ═══
+        case 'class_ended':
+            console.log('🔴 Received class_ended signal');
+            if (typeof showClassEnded === 'function') {
+                showClassEnded(data.reason, data.message, data.delaySeconds || 5);
+            }
+            break;
+
+        // ═══ ✅ معلم برگشت ═══
+        case 'teacher_returned':
+            console.log('✅ Teacher returned');
+            if (typeof cancelClassEnded === 'function') {
+                cancelClassEnded();
+            }
             break;
 
         // ═══ Pong ═══

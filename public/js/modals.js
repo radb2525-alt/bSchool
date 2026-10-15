@@ -142,9 +142,16 @@ document.addEventListener('click', (e) => {
 //              Close Modals on Escape
 // ═══════════════════════════════════════════
 document.addEventListener('keydown', (e) => {
+    // ⭐ Modal پایان کلاس — Escape کار نمی‌کند
+    const classEndedModal = document.getElementById('classEndedModal');
+    if (classEndedModal && classEndedModal.classList.contains('show')) {
+        return;
+    }
+    
     if (e.key === 'Escape') {
         closeHelpModal();
         closePermissionsModal();
+        if (typeof closePasswordModal === 'function') closePasswordModal();
     }
 });
 

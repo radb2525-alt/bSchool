@@ -1,0 +1,558 @@
+﻿<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>کلاس آنلاین v3.5 - مدرسه هوشمند</title>
+
+    <!-- ⭐ CSS خارجی -->
+    <link rel="stylesheet" href="css/base.css?v=3.5">
+    <link rel="stylesheet" href="css/layout.css?v=3.5">
+    <link rel="stylesheet" href="css/components.css?v=3.5">
+    <link rel="stylesheet" href="css/modals.css?v=3.5">
+    <link rel="stylesheet" href="css/animations.css?v=3.5">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              Join Modal (Compact)           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="modal" id="joinModal">
+    <div class="modal-content">
+
+        <!-- Header -->
+        <div class="modal-header">
+            <h1>🎓 کلاس آنلاین</h1>
+            <button class="help-icon-btn" onclick="openHelpModal()" data-tooltip="راهنمای استفاده">❓</button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+
+            <div class="modal-field">
+                <label>📝 کد اتاق</label>
+                <input type="text" id="inputRoomId" placeholder="مثلاً: class-101" value="class-101">
+            </div>
+
+            <div class="modal-field" id="passwordField">
+                <label>🔐 رمز اتاق (اختیاری)</label>
+                <input type="password" id="inputRoomPassword" placeholder="اگر رمز دارید وارد کنید" maxlength="8" dir="ltr">
+                <div style="color:#888;font-size:8.5pt;margin-top:4px;">
+                    💡 اگر رمز را نمی‌دانید، خالی بگذارید
+                </div>
+            </div>
+
+            <div class="modal-field" id="passwordField" style="display: none;">
+                <label>🔐 رمز اتاق</label>
+                <input type="password" id="inputRoomPassword" placeholder="رمز را از معلم بگیرید" maxlength="8" dir="ltr">
+                <div style="color:#888;font-size:8.5pt;margin-top:4px;">
+                    💡 اگر اتاق رمز دارد، وارد کنید
+                </div>
+            </div>
+          
+            <div class="modal-field">
+                <label>👤 نام شما</label>
+                <input type="text" id="inputUserName" placeholder="نام و نام خانوادگی">
+            </div>
+
+            <div class="modal-field">
+                <label>🎭 نقش شما</label>
+                <select id="inputRole">
+                    <option value="student">👨‍🎓 دانش‌آموز</option>
+                    <option value="teacher">👨‍🏫 معلم</option>
+                </select>
+            </div>
+
+            <!-- بخش سرور -->
+            <div class="server-section-compact" id="serverSection">
+                <div class="server-section-header" onclick="toggleServerSection()">
+                    <div class="server-section-title">
+                        <span class="server-status-indicator" id="serverStatusDot"></span>
+                        <span id="serverSectionTitle">⚙️ سرور پیش‌فرض</span>
+                    </div>
+                    <span class="server-section-toggle" id="serverToggleIcon">▼</span>
+                </div>
+
+                <div class="server-section-body" id="serverSectionBody">
+                    <div class="server-section-inner">
+
+                        <div class="server-mode-options">
+                            <label class="server-mode-option selected" id="modeDefaultLabel">
+                                <input type="radio" name="serverMode" value="default" checked onchange="toggleServerMode()">
+                                <div class="option-content">
+                                    <div class="option-title">🌐 پیش‌فرض (خودکار)</div>
+                                    <div class="option-desc">سرور اینترنتی — همیشه در دسترس</div>
+                                </div>
+                            </label>
+
+                            <label class="server-mode-option" id="modeCustomLabel">
+                                <input type="radio" name="serverMode" value="custom" onchange="toggleServerMode()">
+                                <div class="option-content">
+                                    <div class="option-title">🔧 سرور سفارشی</div>
+                                    <div class="option-desc">شبکه مدرسه، یا سرور اختصاصی</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="server-address-box" id="serverAddressBox">
+                            <label>📍 آدرس سرور:</label>
+                            <input type="text" id="inputServerAddress" 
+                                   placeholder="http://192.168.1.100:8686" dir="ltr">
+
+                            <div class="server-examples">
+                                <div class="server-examples-title">📋 نمونه‌ها (کلیک کنید):</div>
+                                <div class="server-example-item" onclick="setServerExample('http://localhost:8686')">
+                                    <span>🖥️</span>http://localhost:8686
+                                </div>
+                                <div class="server-example-item" onclick="setServerExample('http://192.168.1.100:8686')">
+                                    <span>🏫</span>http://192.168.1.100:8686
+                                </div>
+                                <div class="server-example-item" onclick="setServerExample('https://myschool.ir')">
+                                    <span>🌐</span>https://myschool.ir
+                                </div>
+                            </div>
+
+                            <button class="test-connection-btn" id="testConnectionBtn" onclick="testServerConnection()">
+                                🔌 تست اتصال
+                            </button>
+
+                            <div class="connection-result" id="connectionResult"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+            <button class="join-btn" onclick="joinRoom()">🚀 ورود به کلاس</button>
+            <div class="modal-footer-note">💡 اگر مطمئن نیستید، همینطور رها کنید و وارد شوید</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              Help Modal                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="help-modal" id="helpModal">
+    <div class="help-content">
+
+        <div class="help-header">
+            <h2>❓ راهنمای استفاده</h2>
+            <button class="help-close" onclick="closeHelpModal()">❌</button>
+        </div>
+
+        <div class="help-body">
+
+            <div class="help-item">
+                <div class="help-item-title">📝 کد اتاق</div>
+                <div class="help-item-content">
+                    کدی که معلم شما تعیین کرده است. همه دانش‌آموزان باید <b>همین کد</b> را وارد کنند.
+                    <div class="help-item-example">مثال: class-101</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">👤 نام شما</div>
+                <div class="help-item-content">
+                    نامی که برای معلم و سایر دانش‌آموزان نمایش داده می‌شود.
+                    <div class="help-item-example">مثال: علی رضایی</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">🎭 نقش شما</div>
+                <div class="help-item-content">
+                    • <b>دانش‌آموز:</b> می‌تواند ویدیو، چت و تخته سفید را ببیند.<br>
+                    • <b>معلم:</b> می‌تواند کلاس را کنترل کند (تغییر حالت، اشتراک صفحه).
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">⚙️ اتصال سرور</div>
+                <div class="help-item-content">
+                    • <b>پیش‌فرض:</b> اگر معلم آدرس خاصی نداده.<br>
+                    • <b>سفارشی:</b> اگر معلم گفته «سرور مدرسه».
+                    <div class="help-item-example">http://192.168.1.100:8686</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">🔌 تست اتصال</div>
+                <div class="help-item-content">
+                    قبل از ورود، مطمئن شوید سرور در دسترس است.
+                </div>
+            </div>
+
+            <div class="help-item" style="background: linear-gradient(135deg, #1e3a5f, #0f3460); border-right-color: #4CAF50;">
+                <div class="help-item-title" style="color: #4CAF50;">💡 نکته</div>
+                <div class="help-item-content">
+                    اگر مطمئن نیستید، همین‌طور رها کنید و وارد شوید.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="help-footer">
+            <button class="help-ok-btn" onclick="closeHelpModal()">✅ متوجه شدم</button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              App                            -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="app">
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div class="left">
+            <span class="app-logo">🎓 کلاس آنلاین</span>
+            <div class="mode-indicator" id="modeIndicator">🎬 Grid</div>
+        </div>
+        <div class="center" style="flex: 1; justify-content: center; max-width: 450px;">
+            <div class="chat-ticker hidden" id="chatTicker" onclick="openSidebar('chat')">
+                <div class="chat-ticker-line" id="tickerLine1"></div>
+                <div class="chat-ticker-line" id="tickerLine2"></div>
+                <div class="chat-ticker-line" id="tickerLine3"></div>
+            </div>
+        </div>
+        <div class="right">
+            <span class="room-badge" style="margin-left: 8px;">اتاق: <b id="displayRoomId">---</b></span>
+            <span class="online-badge">👥 <span id="onlineCount">0</span></span>
+            <span class="connection-status offline" id="connectionStatus">قطع</span>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="content-area">
+
+        <main class="main-stage" id="mainStage">
+
+            <!-- Grid View -->
+            <div id="gridView" class="view active">
+                <div class="videos-grid" id="videosGrid">
+                    <div class="video-container" id="localVideoContainer">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                        <div class="user-label" id="localLabel">🎥 شما</div>
+                        <div class="mic-status" id="localMicStatus">🎤</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera View -->
+            <div id="cameraView" class="view">
+                <video id="cameraViewVideo" autoplay playsinline></video>
+            </div>
+
+            <!-- Screen View -->
+            <div id="screenView" class="view">
+                <video id="screenViewVideo" autoplay playsinline></video>
+            </div>
+
+            <!-- Whiteboard View -->
+            <div id="whiteboardView" class="view">
+                <div class="wb-tools-bar" id="wbToolsBar">
+                    <button class="wb-btn active" id="toolPen" onclick="setTool('pen')">✏️ قلم</button>
+                    <button class="wb-btn" id="toolEraser" onclick="setTool('eraser')">🧽 پاک‌کن</button>
+                    <button class="wb-btn" id="toolText" onclick="setTool('text')">🅰️ متن</button>
+
+                    <span style="color:#999;margin:0 5px;">|</span>
+                    <div class="wb-color active" style="background:#000000;" onclick="setColor('#000000', this)"></div>
+                    <div class="wb-color" style="background:#f44336;" onclick="setColor('#f44336', this)"></div>
+                    <div class="wb-color" style="background:#2196F3;" onclick="setColor('#2196F3', this)"></div>
+                    <div class="wb-color" style="background:#4CAF50;" onclick="setColor('#4CAF50', this)"></div>
+                    <div class="wb-color" style="background:#FF9800;" onclick="setColor('#FF9800', this)"></div>
+                    <div class="wb-color" style="background:#9C27B0;" onclick="setColor('#9C27B0', this)"></div>
+                    <div class="wb-color" style="background:#FFEB3B;" onclick="setColor('#FFEB3B', this)"></div>
+
+                    <span style="color:#999;margin:0 5px;">|</span>
+                    <label style="color:#eee;font-size:10pt;">اندازه:</label>
+                    <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setBrushSize(this.value)" class="wb-size-range">
+                    <span id="brushSizeLabel" style="color:white;font-size:10pt;width:20px;">3</span>
+
+                    <span style="color:#999;margin:0 5px;">|</span>
+                    <button class="wb-btn" style="background:#f44336;" onclick="clearWhiteboard()">🗑️ پاک کردن</button>
+                </div>
+                <div class="wb-canvas-wrap">
+                    <canvas id="whiteboardCanvas"></canvas>
+                    <div id="noAccessMsg">
+                        <div style="font-size:30pt;margin-bottom:15px;">🔒</div>
+                        <div>شما اجازه دیدن تخته سفید را ندارید</div>
+                        <div style="font-size:10pt;color:#999;margin-top:10px;">معلم می‌تواند دسترسی شما را فعال کند</div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              Hover Sidebars                 -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="sidebar-trigger">
+    <button class="sidebar-trigger-btn" id="triggerChat" onclick="toggleSidebar('chat')" onmouseenter="hoverSidebar('chat')">💬</button>
+    <button class="sidebar-trigger-btn" id="triggerParticipants" onclick="toggleSidebar('participants')" onmouseenter="hoverSidebar('participants')">👥</button>
+    <button class="sidebar-trigger-btn teacher-only" id="triggerControl" onclick="toggleSidebar('control')" onmouseenter="hoverSidebar('control')">⚙️</button>
+</div>
+
+<!-- Chat Sidebar -->
+<aside class="sidebar-panel" id="sidebarChat" onmouseleave="scheduleClose('chat')">
+    <div class="sidebar-panel-header">
+        <span>💬 چت کلاس</span>
+        <button onclick="closeSidebar('chat')" style="background:transparent;border:none;color:#e94560;font-size:14pt;cursor:pointer;">✖</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="پیام..." onkeypress="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()">📨</button>
+    </div>
+</aside>
+
+<!-- Participants Sidebar -->
+<aside class="sidebar-panel" id="sidebarParticipants" onmouseleave="scheduleClose('participants')">
+    <div class="sidebar-panel-header">
+        <span>👥 شرکت‌کنندگان</span>
+        <button onclick="closeSidebar('participants')" style="background:transparent;border:none;color:#e94560;font-size:14pt;cursor:pointer;">✖</button>
+    </div>
+    <div class="sidebar-panel-body">
+        <div class="participants-list" id="participantsList"></div>
+    </div>
+</aside>
+
+<!-- Control Sidebar -->
+<aside class="sidebar-panel teacher-only" id="sidebarControl" onmouseleave="scheduleClose('control')">
+    <div class="sidebar-panel-header">
+        <span>⚙️ کنترل محیط</span>
+        <button onclick="closeSidebar('control')" style="background:transparent;border:none;color:#e94560;font-size:14pt;cursor:pointer;">✖</button>
+    </div>
+    <div class="sidebar-panel-body">
+
+        <div class="control-section">
+            <h3>🎬 حالت نمایش</h3>
+            <div class="mode-buttons-grid">
+                <button class="mode-btn" data-mode="grid" onclick="setMode('grid')">
+                    <span class="mode-icon">🎬</span><span class="mode-label">Grid</span>
+                </button>
+                <button class="mode-btn" data-mode="camera" onclick="setMode('camera')">
+                    <span class="mode-icon">📹</span><span class="mode-label">دوربین معلم</span>
+                </button>
+                <button class="mode-btn" data-mode="whiteboard" onclick="setMode('whiteboard')">
+                    <span class="mode-icon">🎨</span><span class="mode-label">تخته سفید</span>
+                </button>
+                <button class="mode-btn" data-mode="screen" onclick="setMode('screen')">
+                    <span class="mode-icon">🖥️</span><span class="mode-label">اشتراک صفحه</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 🔒 امنیت اتاق -->
+        <div class="control-section" id="securitySection">
+            <h3>🔑 امنیت اتاق</h3>
+            
+            <div class="info-line">
+                <span>وضعیت:</span>
+                <span class="value" id="roomSecurityStatus">🔓 باز</span>
+            </div>
+            <div class="info-line">
+                <span>رمز:</span>
+                <span class="value" id="roomPasswordStatus">ندارد</span>
+            </div>
+            
+            <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="control-btn" id="btnSetPassword" onclick="openPasswordModal()" style="flex: 1; min-width: 100px;">
+                    🔑 تعیین رمز
+                </button>
+                <button class="control-btn danger" id="btnRemovePassword" onclick="removeRoomPassword()" style="flex: 1; min-width: 100px; display: none;">
+                    🗑️ حذف رمز
+                </button>
+            </div>
+            
+            <div style="margin-top: 8px;">
+                <button class="control-btn secondary" id="btnLockRoom" onclick="toggleRoomLock()" style="width: 100%;">
+                    🔒 قفل کامل اتاق
+                </button>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>🎨 کنترل تخته سفید</h3>
+            <button class="control-btn" onclick="openPermissionsModal()">⚙️ تنظیم دسترسی‌ها</button>
+            <button class="control-btn secondary" onclick="clearWhiteboard()">🗑️ پاک کردن تخته</button>
+        </div>
+
+        <div class="control-section">
+            <h3>🔔 اعلان‌های چت</h3>
+            <div class="chat-setting-row">
+                <label><input type="checkbox" id="settingSound" onchange="saveChatSettings()"><span>صدای اعلان (دینگ)</span></label>
+            </div>
+            <div class="chat-setting-row">
+                <label><input type="checkbox" id="settingIcon" onchange="saveChatSettings()"><span>تغییر رنگ آیکون چت</span></label>
+            </div>
+            <div class="chat-setting-row">
+                <label><input type="checkbox" id="settingTicker" onchange="saveChatSettings()"><span>نمایش پیام در هدر</span></label>
+            </div>
+            <div class="chat-setting-actions">
+                <button class="sound-test-btn" onclick="playDing(true)">🔊 تست صدا</button>
+                <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSoundMute()">🔊 قطع صدا</button>
+            </div>
+        </div>
+
+        <div class="control-section" style="background: linear-gradient(135deg, #1e3a5f, #0f3460);">
+            <h3>📖 راهنمای سریع</h3>
+            <div style="color:#ccc; font-size:10pt; line-height:2;">
+                <div>🎬 <b>حالت‌ها:</b> تغییر نمای کلاس</div>
+                <div>🎨 <b>تخته سفید:</b> رسم + متن</div>
+                <div>🔔 <b>اعلان‌ها:</b> صدا + آیکون</div>
+                <div>🖥️ <b>اشتراک صفحه:</b> دسکتاپ معلم</div>
+                <div>✋ <b>سوال:</b> دست بالا</div>
+                <div>💬 <b>چت:</b> گفتگو</div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>📊 اطلاعات اتاق</h3>
+            <div class="info-line"><span>کد اتاق:</span><span class="value" id="infoRoomId">---</span></div>
+            <div class="info-line"><span>نقش شما:</span><span class="value" id="infoRole">---</span></div>
+            <div class="info-line"><span>تعداد حاضرین:</span><span class="value" id="infoOnlineCount">0</span></div>
+            <div class="info-line"><span>وضعیت اتصال:</span><span class="value" id="infoConnection">---</span></div>
+        </div>
+
+    </div>
+</aside>
+
+<!-- Glass Control Bar -->
+<div class="glass-control-bar" id="glassControlBar">
+    <button class="glass-btn active" id="btnMic" onclick="toggleMic()" data-tooltip="میکروفن">
+        🎤<span class="tooltip">میکروفن</span>
+    </button>
+    <button class="glass-btn active" id="btnCam" onclick="toggleCam()" data-tooltip="دوربین">
+        📹<span class="tooltip">دوربین</span>
+    </button>
+    <button class="glass-btn" id="btnHand" onclick="toggleHand()" data-tooltip="سوال">
+        ✋<span class="tooltip">سوال</span>
+    </button>
+    <div class="glass-divider"></div>
+    <button class="glass-btn whiteboard-btn" id="btnWhiteboard" onclick="toggleWhiteboard()" data-tooltip="تخته سفید">
+        🎨<span class="tooltip">تخته سفید</span>
+    </button>
+    <button class="glass-btn screen-btn" id="btnScreen" onclick="toggleScreenShare()" data-tooltip="اشتراک صفحه">
+        🖥️<span class="tooltip">اشتراک صفحه</span>
+    </button>
+    <div class="glass-divider"></div>
+    <button class="glass-btn danger" onclick="leaveRoom()" data-tooltip="خروج">
+        🚪<span class="tooltip">خروج</span>
+    </button>
+</div>
+
+<!-- Permissions Modal -->
+<div class="permissions-modal" id="permissionsModal">
+    <div class="permissions-content">
+        <div class="permissions-header">
+            <h2>⚙️ کنترل دسترسی تخته سفید</h2>
+            <button onclick="closePermissionsModal()" style="background:#f44336;border:none;color:white;padding:8px 15px;border-radius:8px;cursor:pointer;font-size:14pt;">❌</button>
+        </div>
+        <div class="permissions-body">
+            <div class="permission-section">
+                <h3>👁️ چه کسی تخته را ببیند؟</h3>
+                <div class="radio-group">
+                    <label><input type="radio" name="viewMode" value="all"> <span>همه دانش‌آموزان</span></label>
+                    <label><input type="radio" name="viewMode" value="selected" checked> <span>انتخابی</span></label>
+                    <label><input type="radio" name="viewMode" value="teacher"> <span>فقط من (معلم)</span></label>
+                </div>
+                <div class="user-list" id="viewersList">
+                    <div class="user-list-title">👥 انتخاب بینندگان:</div>
+                    <div class="checkboxes" id="viewersCheckboxes"></div>
+                </div>
+            </div>
+            <div class="permission-section">
+                <h3>✏️ چه کسی بنویسد؟</h3>
+                <div class="radio-group">
+                    <label><input type="radio" name="drawMode" value="teacher" checked> <span>فقط من</span></label>
+                    <label><input type="radio" name="drawMode" value="selected"> <span>انتخابی</span></label>
+                    <label><input type="radio" name="drawMode" value="all"> <span>همه</span></label>
+                </div>
+                <div class="user-list" id="drawersList">
+                    <div class="user-list-title">👥 انتخاب نویسندگان:</div>
+                    <div class="checkboxes" id="drawersCheckboxes"></div>
+                </div>
+            </div>
+            <div class="permission-section">
+                <h3>💬 چت</h3>
+                <div style="color:#4CAF50;font-size:11pt;">✅ چت برای همه فعال است</div>
+            </div>
+        </div>
+        <div class="permissions-footer">
+            <button class="permissions-btn save" onclick="savePermissions()">💾 ذخیره و بستن</button>
+            <button class="permissions-btn cancel" onclick="closePermissionsModal()">❌ انصراف</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Modal: تعیین رمز اتاق ═══ -->
+<div class="password-modal" id="passwordModal">
+    <div class="password-content">
+        <div class="password-header">
+            <h2>🔑 تعیین رمز اتاق</h2>
+            <button class="help-close" onclick="closePasswordModal()">❌</button>
+        </div>
+        
+        <div class="password-body">
+            <div class="modal-field">
+                <label>رمز جدید (۴ تا ۸ کاراکتر):</label>
+                <input type="password" id="newRoomPassword" placeholder="رمز جدید" maxlength="8" dir="ltr">
+            </div>
+            
+            <div class="modal-field">
+                <label>تأیید رمز:</label>
+                <input type="password" id="confirmRoomPassword" placeholder="تکرار رمز" maxlength="8" dir="ltr">
+            </div>
+            
+            <div style="background: #0f3460; padding: 10px; border-radius: 8px; color: #999; font-size: 10pt; line-height: 1.6; margin-top: 10px;">
+                💡 نکات:
+                <ul style="margin: 8px 20px; padding: 0;">
+                    <li>حداقل ۴ کاراکتر</li>
+                    <li>حداکثر ۸ کاراکتر</li>
+                    <li>دانش‌آموزان جدید باید این رمز را وارد کنند</li>
+                    <li>دانش‌آموزان فعلی خارج نمی‌شوند</li>
+                </ul>
+            </div>
+            
+            <div class="connection-result" id="passwordError" style="display: none;"></div>
+        </div>
+        
+        <div class="password-footer">
+            <button class="permissions-btn save" onclick="saveRoomPassword()">
+                ✅ ذخیره رمز
+            </button>
+            <button class="permissions-btn cancel" onclick="closePasswordModal()">
+                ❌ انصراف
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ⭐ JS خارجی -->
+<script src="js/config.js?v=3.5"></script>
+<script src="js/utils.js?v=3.5"></script>
+<script src="js/storage.js?v=3.5"></script>
+<script src="js/sidebar.js?v=3.5"></script>
+<script src="js/server-settings.js?v=3.5"></script>
+<script src="js/notifications.js?v=3.5"></script>
+<script src="js/whiteboard.js?v=3.5"></script>
+<script src="js/webrtc.js?v=3.5"></script>
+<script src="js/websocket.js?v=3.5"></script>
+<script src="js/ui-controls.js?v=3.5"></script>
+<script src="js/modals.js?v=3.5"></script>
+<script src="js/main.js?v=3.5"></script>
+
+</body>
+</html>

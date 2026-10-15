@@ -80,6 +80,12 @@ let currentMode = 'grid';
 // ═══════════════════════════════════════════
 let roomMembers = [];
 
+// ⭐ امنیت اتاق
+let roomSecurity = {
+    hasPassword: false,
+    locked: false,
+};
+
 // ═══════════════════════════════════════════
 //              Whiteboard Permissions
 // ═══════════════════════════════════════════

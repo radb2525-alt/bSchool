@@ -34,6 +34,22 @@
                 <input type="text" id="inputRoomId" placeholder="مثلاً: class-101" value="class-101">
             </div>
 
+            <div class="modal-field" id="passwordField">
+                <label>🔐 رمز اتاق (اختیاری)</label>
+                <input type="password" id="inputRoomPassword" placeholder="اگر رمز دارید وارد کنید" maxlength="8" dir="ltr">
+                <div style="color:#888;font-size:8.5pt;margin-top:4px;">
+                    💡 اگر رمز را نمی‌دانید، خالی بگذارید
+                </div>
+            </div>
+
+            <div class="modal-field" id="passwordField" style="display: none;">
+                <label>🔐 رمز اتاق</label>
+                <input type="password" id="inputRoomPassword" placeholder="رمز را از معلم بگیرید" maxlength="8" dir="ltr">
+                <div style="color:#888;font-size:8.5pt;margin-top:4px;">
+                    💡 اگر اتاق رمز دارد، وارد کنید
+                </div>
+            </div>
+          
             <div class="modal-field">
                 <label>👤 نام شما</label>
                 <input type="text" id="inputUserName" placeholder="نام و نام خانوادگی">
@@ -338,6 +354,35 @@
             </div>
         </div>
 
+        <!-- 🔒 امنیت اتاق -->
+        <div class="control-section" id="securitySection">
+            <h3>🔑 امنیت اتاق</h3>
+            
+            <div class="info-line">
+                <span>وضعیت:</span>
+                <span class="value" id="roomSecurityStatus">🔓 باز</span>
+            </div>
+            <div class="info-line">
+                <span>رمز:</span>
+                <span class="value" id="roomPasswordStatus">ندارد</span>
+            </div>
+            
+            <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="control-btn" id="btnSetPassword" onclick="openPasswordModal()" style="flex: 1; min-width: 100px;">
+                    🔑 تعیین رمز
+                </button>
+                <button class="control-btn danger" id="btnRemovePassword" onclick="removeRoomPassword()" style="flex: 1; min-width: 100px; display: none;">
+                    🗑️ حذف رمز
+                </button>
+            </div>
+            
+            <div style="margin-top: 8px;">
+                <button class="control-btn secondary" id="btnLockRoom" onclick="toggleRoomLock()" style="width: 100%;">
+                    🔒 قفل کامل اتاق
+                </button>
+            </div>
+        </div>
+
         <div class="control-section">
             <h3>🎨 کنترل تخته سفید</h3>
             <button class="control-btn" onclick="openPermissionsModal()">⚙️ تنظیم دسترسی‌ها</button>
@@ -449,6 +494,69 @@
             <button class="permissions-btn save" onclick="savePermissions()">💾 ذخیره و بستن</button>
             <button class="permissions-btn cancel" onclick="closePermissionsModal()">❌ انصراف</button>
         </div>
+    </div>
+</div>
+
+<!-- ═══ Modal: تعیین رمز اتاق ═══ -->
+<div class="password-modal" id="passwordModal">
+    <div class="password-content">
+        <div class="password-header">
+            <h2>🔑 تعیین رمز اتاق</h2>
+            <button class="help-close" onclick="closePasswordModal()">❌</button>
+        </div>
+        
+        <div class="password-body">
+            <div class="modal-field">
+                <label>رمز جدید (۴ تا ۸ کاراکتر):</label>
+                <input type="password" id="newRoomPassword" placeholder="رمز جدید" maxlength="8" dir="ltr">
+            </div>
+            
+            <div class="modal-field">
+                <label>تأیید رمز:</label>
+                <input type="password" id="confirmRoomPassword" placeholder="تکرار رمز" maxlength="8" dir="ltr">
+            </div>
+            
+            <div style="background: #0f3460; padding: 10px; border-radius: 8px; color: #999; font-size: 10pt; line-height: 1.6; margin-top: 10px;">
+                💡 نکات:
+                <ul style="margin: 8px 20px; padding: 0;">
+                    <li>حداقل ۴ کاراکتر</li>
+                    <li>حداکثر ۸ کاراکتر</li>
+                    <li>دانش‌آموزان جدید باید این رمز را وارد کنند</li>
+                    <li>دانش‌آموزان فعلی خارج نمی‌شوند</li>
+                </ul>
+            </div>
+            
+            <div class="connection-result" id="passwordError" style="display: none;"></div>
+        </div>
+        
+        <div class="password-footer">
+            <button class="permissions-btn save" onclick="saveRoomPassword()">
+                ✅ ذخیره رمز
+            </button>
+            <button class="permissions-btn cancel" onclick="closePasswordModal()">
+                ❌ انصراف
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--         Modal: پایان کلاس                   -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="class-ended-modal" id="classEndedModal">
+    <div class="class-ended-content">
+        <div class="class-ended-icon">🔴</div>
+        <h2 class="class-ended-title">کلاس تمام شد</h2>
+        <p class="class-ended-message" id="classEndedMessage">معلم از کلاس خارج شد</p>
+        
+        <div class="class-ended-countdown">
+            <div class="countdown-circle" id="countdownCircle">5</div>
+            <div class="countdown-label">در حال بازگشت به صفحه ورود...</div>
+        </div>
+        
+        <button class="class-ended-btn" onclick="endClassNow()">
+            🚪 خروج فوری
+        </button>
     </div>
 </div>
 

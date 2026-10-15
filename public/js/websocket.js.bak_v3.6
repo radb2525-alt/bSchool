@@ -1,0 +1,283 @@
+// ═══════════════════════════════════════════
+//              WebSocket Connection
+//              v3.5
+// ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+//              Connect WebSocket
+// ═══════════════════════════════════════════
+function connectWS() {
+    try {
+        // ⭐ اطمینان از به‌روز بودن URL
+        updateWebSocketUrl();
+
+        console.log('🔌 Connecting to:', WS_URL);
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+            console.log('✅ WebSocket connected');
+            document.getElementById('connectionStatus').textContent = 'آنلاین';
+            document.getElementById('connectionStatus').className = 'connection-status online';
+            document.getElementById('infoConnection').textContent = 'آنلاین';
+            document.getElementById('infoConnection').style.color = '#4CAF50';
+
+            ws.send(JSON.stringify({
+                type: 'join',
+                room_id: roomId,
+                user_id: userId,
+                user_name: userName,
+                role: userRole,
+                password: pendingRoomPassword || ''    // ⭐ رمز اتاق
+            }));
+
+            reconnectAttempts = 0;
+            addSystemMessage('✅ به کلاس متصل شدید');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                handleMessage(JSON.parse(event.data));
+            } catch (err) {
+                console.error('Msg parse error:', err);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('❌ WebSocket disconnected');
+            document.getElementById('connectionStatus').textContent = 'قطع';
+            document.getElementById('connectionStatus').className = 'connection-status offline';
+            document.getElementById('infoConnection').textContent = 'قطع';
+            document.getElementById('infoConnection').style.color = '#f44336';
+
+            if (!intentionalClose && reconnectAttempts < 5) {
+                reconnectAttempts++;
+                setTimeout(connectWS, 2000);
+            }
+        };
+
+        ws.onerror = (e) => console.error('WS error:', e);
+
+    } catch (e) {
+        console.error('Connect error:', e);
+    }
+}
+
+// ═══════════════════════════════════════════
+//              Handle Messages
+// ═══════════════════════════════════════════
+function handleMessage(data) {
+    switch (data.type) {
+
+        // ═══ Room Info (در بدو ورود) ═══
+        case 'room_info':
+            if (data.data) {
+                if (data.data.students) {
+                    data.data.students.forEach(s => {
+                        remoteNames[s.id] = s.name;
+                        if (s.id !== userId) createPeerConnection(s.id, s.name);
+                    });
+                }
+                if (data.data.teacher && data.data.teacher.id !== userId) {
+                    remoteNames[data.data.teacher.id] = data.data.teacher.name;
+                    remoteRoles[data.data.teacher.id] = 'teacher';
+                    createPeerConnection(data.data.teacher.id, data.data.teacher.name);
+                }
+                if (data.data.members) {
+                    roomMembers = data.data.members;
+                    updateParticipantsList();
+                }
+                if (data.data.currentMode) {
+                    currentMode = data.data.currentMode;
+                    applyMode(currentMode);
+                }
+                if (data.data.whiteboard) {
+                    wbPermissions = data.data.whiteboard;
+                    applyWBPermissions();
+                }
+                 // ⭐ امنیت اتاق
+                if (data.data.security) {
+                    roomSecurity = data.data.security;
+                    updateSecurityUI();
+                }
+                document.getElementById('onlineCount').textContent = data.data.online_count || 0;
+                document.getElementById('infoOnlineCount').textContent = data.data.online_count || 0;
+            }
+            break;
+
+        // ═══ Whiteboard ═══
+        case 'whiteboard':
+            handleWhiteboard(data.data);
+            break;
+
+        // ═══ User Joined ═══
+        case 'user_joined':
+            addSystemMessage(`🔵 ${data.user_name} وارد شد`);
+            document.getElementById('onlineCount').textContent = data.online_count;
+            document.getElementById('infoOnlineCount').textContent = data.online_count;
+            remoteNames[data.user_id] = data.user_name;
+            if (data.role) remoteRoles[data.user_id] = data.role;
+            if (data.user_id !== userId) createPeerConnection(data.user_id, data.user_name);
+            break;
+
+        // ═══ User Left ═══
+        case 'user_left':
+            addSystemMessage(`🔴 ${data.user_name || 'کاربر'} خارج شد`);
+            removePeerConnection(data.user_id);
+            delete remoteNames[data.user_id];
+            delete remoteRoles[data.user_id];
+            break;
+
+        // ═══ Members Update ═══
+        case 'members_update':
+            roomMembers = data.members || [];
+            document.getElementById('onlineCount').textContent = data.online_count || roomMembers.length;
+            document.getElementById('infoOnlineCount').textContent = data.online_count || roomMembers.length;
+            updateParticipantsList();
+            break;
+
+        // ═══ Chat Message ═══
+        case 'chat_message':
+            addChatMessage(data.user, data.message, data.time);
+            // ⭐ اگر پیام از خودم نیست:
+            if (data.user !== userName) {
+                addMessageToTicker(data.user, data.message, data.time);
+                if (!chatSidebarOpen) {
+                    unreadCount++;
+                    setChatIconNotify(true);
+                    playDing();
+                }
+            }
+            break;
+
+        // ═══ Hand Raise ═══
+        case 'hand_raised':
+            addSystemMessage(`✋ ${data.user_name} سوال دارد`);
+            highlightHandRaised(data.user_name);
+            break;
+
+        case 'hand_lowered':
+            addSystemMessage(`✋ یک کاربر سوال خود را برداشت`);
+            removeHandHighlights();
+            break;
+
+        // ═══ Signal (WebRTC) ═══
+        case 'signal':
+            handleSignal(data);
+            break;
+
+        // ═══ Mode Changed ═══
+        case 'mode_changed':
+            currentMode = data.mode;
+            applyMode(currentMode);
+            addSystemMessage(`🎬 حالت → "${modeNames[data.mode]}"`);
+            break;
+
+        // ═══ Whiteboard Permissions ═══
+        case 'whiteboard_permissions_changed':
+            wbPermissions = data.whiteboard;
+            applyWBPermissions();
+            addSystemMessage(`⚙️ دسترسی تخته سفید به‌روزرسانی شد`);
+            break;
+
+        // ═══ Screen Share ═══
+        case 'screen_share_started':
+            addSystemMessage(`🖥️ ${data.user_name} صفحه‌اش را اشتراک گذاشت`);
+            break;
+
+        case 'screen_share_stopped':
+            addSystemMessage(`🖥️ ${data.user_name} اشتراک را قطع کرد`);
+            break;
+
+        // ═══ 🔒 امنیت اتاق ═══
+        case 'security_update':
+            roomSecurity = data.security;
+            updateSecurityUI();
+            
+            if (data.security.hasPassword) {
+                if (data.security.locked) {
+                    addSystemMessage(`🔒 اتاق توسط ${data.by || 'معلم'} قفل شد`);
+                } else if (roomSecurity.hasPassword) {
+                    addSystemMessage(`🔐 رمز اتاق توسط ${data.by || 'معلم'} تعیین شد`);
+                }
+            } else {
+                addSystemMessage(`🔓 رمز اتاق توسط ${data.by || 'معلم'} حذف شد`);
+            }
+            break;
+
+        case 'security_error':
+            alert('⚠️ ' + data.message);
+            break;
+
+        case 'join_failed':
+            console.error('❌ Join failed:', data.reason);
+            
+            let errorMsg = 'خطا در ورود';
+            if (data.reason === 'wrong_password') {
+                errorMsg = '🔐 رمز اتاق اشتباه است';
+            } else if (data.reason === 'room_locked') {
+                errorMsg = '🔒 اتاق توسط معلم قفل شده است';
+            } else if (data.reason === 'too_many_attempts') {
+                errorMsg = '⛔ تعداد تلاش‌های زیاد. ۵ دقیقه صبر کنید';
+            } else if (data.message) {
+                errorMsg = data.message;
+            }
+            
+            alert(errorMsg);
+            
+            // بازگشت به Join Modal
+            document.getElementById('joinModal').classList.remove('hidden');
+            document.getElementById('app').classList.remove('visible');
+            
+            intentionalClose = true;
+            if (ws) ws.close();
+            break;
+
+        case 'room_locked':
+            roomSecurity.locked = true;
+            updateSecurityUI();
+            alert('🔒 اتاق قفل شد');
+            location.reload();
+            break;
+
+        case 'room_unlocked':
+            roomSecurity.locked = false;
+            updateSecurityUI();
+            break;
+
+        // ═══ Pong ═══
+        case 'pong':
+            break;
+
+        default:
+            console.log('Unknown message type:', data.type);
+    }
+}
+
+// ═══════════════════════════════════════════
+//              Send Chat
+// ═══════════════════════════════════════════
+function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'chat', message: msg }));
+    input.value = '';
+}
+
+// ═══════════════════════════════════════════
+//              Add Chat Message
+// ═══════════════════════════════════════════
+function addChatMessage(user, message, time) {
+    const c = document.getElementById('chatMessages');
+    if (!c) return;
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `<span class="user">${escapeHtml(user)}:</span> <span class="time">${escapeHtml(time || '')}</span><br>${escapeHtml(message)}`;
+    c.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════
+//              Init Check
+// ═══════════════════════════════════════════
+console.log('✅ websocket.js loaded');

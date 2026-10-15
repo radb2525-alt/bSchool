@@ -729,6 +729,112 @@
 }
 
 /* ═══════════════════════════════════════════ */
+/*              Password Modal                 */
+/* ═══════════════════════════════════════════ */
+.password-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    padding: 20px;
+}
+
+.password-modal.show {
+    display: flex;
+}
+
+.password-content {
+    background: #16213e;
+    border-radius: 15px;
+    width: 480px;
+    max-width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    overflow: hidden;
+    border: 2px solid #667eea;
+}
+
+.password-header {
+    background: linear-gradient(90deg, #0f3460, #16213e);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #667eea;
+    flex-shrink: 0;
+}
+
+.password-header h2 {
+    color: #667eea;
+    font-size: 14pt;
+    margin: 0;
+}
+
+.password-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.password-body .modal-field {
+    margin-bottom: 15px;
+}
+
+.password-body .modal-field label {
+    display: block;
+    color: #ccc;
+    font-size: 10pt;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.password-body .modal-field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #0f3460;
+    border-radius: 8px;
+    background: #0f3460;
+    color: white;
+    font-size: 12pt;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+.password-body .modal-field input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.password-footer {
+    background: #0f3460;
+    padding: 15px 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    border-top: 2px solid #667eea;
+    flex-shrink: 0;
+}
+
+/* ═══ Security Section ═══ */
+#securitySection .info-line .value.locked {
+    color: #f44336;
+}
+
+#securitySection .info-line .value.unlocked {
+    color: #4CAF50;
+}
+
+#securitySection .info-line .value.has-password {
+    color: #FF9800;
+}
+
+/* ═══════════════════════════════════════════ */
 /*              Responsive                     */
 /* ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
@@ -765,4 +871,121 @@
     .checkboxes {
         grid-template-columns: 1fr;
     }
+}
+
+/* ═══════════════════════════════════════════ */
+/*              Class Ended Modal              */
+/* ═══════════════════════════════════════════ */
+.class-ended-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.class-ended-modal.show {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.class-ended-content {
+    background: linear-gradient(135deg, #16213e, #0f3460);
+    border-radius: 20px;
+    padding: 40px 30px;
+    width: 420px;
+    max-width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    border: 2px solid #e94560;
+    animation: slideDown 0.4s ease;
+}
+
+.class-ended-icon {
+    font-size: 60pt;
+    margin-bottom: 15px;
+    animation: pulse 1.5s infinite;
+}
+
+.class-ended-title {
+    color: #e94560;
+    font-size: 22pt;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+
+.class-ended-message {
+    color: #ccc;
+    font-size: 12pt;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.class-ended-countdown {
+    margin: 25px 0;
+}
+
+.countdown-circle {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: rgba(233, 69, 96, 0.2);
+    border: 3px solid #e94560;
+    color: #e94560;
+    font-size: 32pt;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+    animation: pulse 1s infinite;
+}
+
+.countdown-label {
+    color: #999;
+    font-size: 11pt;
+    margin-top: 10px;
+}
+
+.class-ended-btn {
+    padding: 14px 30px;
+    background: linear-gradient(135deg, #f44336, #c62828);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 13pt;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.class-ended-btn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
+}
+
+@keyframes countdownPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 50px rgba(233, 69, 96, 0.9);
+    }
+}
+
+.countdown-circle.counting {
+    animation: countdownPulse 0.5s ease;
 }

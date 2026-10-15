@@ -30,12 +30,32 @@ app.get('/health', (req, res) => {
     });
 });
 
+// ⭐ بررسی امنیت اتاق
+app.get('/api/room/:roomId/security', (req, res) => {
+    const roomId = req.params.roomId;
+    const sec = roomSecurity[roomId];
+    
+    if (!sec) {
+        // اتاق جدید — باز
+        return res.json({ exists: false, hasPassword: false, locked: false });
+    }
+    
+    res.json({
+        exists: true,
+        hasPassword: !!sec.passwordHash,
+        locked: sec.locked || false,
+    });
+});
+
 // ═══════════════════════════════════════════
 //              Storage
 // ═══════════════════════════════════════════
-const rooms = {};           // room_id → Set of clients
-const roomModes = {};       // room_id → { mode, whiteboard: {...} }
-const roomWhiteboards = {}; // room_id → [events]
+const rooms = {};
+const roomModes = {};
+const roomWhiteboards = {};
+const roomSecurity = {};      // ⭐ جدید: امنیت اتاق‌ها
+const loginAttempts = {};     // ⭐ جدید: تلاش‌های ورود
+const roomEndTimers = {};     // ⭐ تایمر بستن کلاس (وقتی معلم خارج می‌شود)
 
 wss.on('connection', (ws, req) => {
     console.log('🔌 New WS connection');
@@ -57,6 +77,62 @@ wss.on('connection', (ws, req) => {
                 room: data.room_id,
                 ws: ws,
             };
+
+            // ⭐ چک امنیت اتاق
+            if (!rooms[data.room_id]) {
+                // اتاق جدید — بدون رمز
+                roomSecurity[data.room_id] = {
+                    passwordHash: null,
+                    locked: false,
+                    createdBy: null,
+                };
+            } else {
+                // اتاق موجود — چک رمز و قفل
+                const sec = roomSecurity[data.room_id];
+
+                // ⭐ چک قفل
+                if (sec.locked && data.role !== 'teacher') {
+                    ws.send(JSON.stringify({
+                        type: 'join_failed',
+                        reason: 'room_locked',
+                        message: 'اتاق توسط معلم قفل شده است',
+                    }));
+                    return;
+                }
+
+                // ⭐ چک رمز (فقط برای دانش‌آموزان)
+                if (sec.passwordHash && data.role !== 'teacher') {
+                    const providedHash = hashPassword(data.password || '');
+                    if (providedHash !== sec.passwordHash) {
+                        // ⭐ ثبت تلاش ناموفق
+                        const clientIp = req.socket.remoteAddress || 'unknown';
+                        if (!loginAttempts[clientIp]) loginAttempts[clientIp] = [];
+                        loginAttempts[clientIp].push(Date.now());
+                        
+                        // پاک کردن تلاش‌های قدیمی (> 5 دقیقه)
+                        const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+                        loginAttempts[clientIp] = loginAttempts[clientIp].filter(t => t > fiveMinAgo);
+
+                        // اگر > 5 تلاش در 5 دقیقه
+                        if (loginAttempts[clientIp].length > 5) {
+                            ws.send(JSON.stringify({
+                                type: 'join_failed',
+                                reason: 'too_many_attempts',
+                                message: 'تعداد تلاش‌های ناموفق زیاد است. ۵ دقیقه صبر کنید',
+                            }));
+                            ws.close();
+                            return;
+                        }
+
+                        ws.send(JSON.stringify({
+                            type: 'join_failed',
+                            reason: 'wrong_password',
+                            message: 'رمز اتاق اشتباه است',
+                        }));
+                        return;
+                    }
+                }
+            }
 
             if (!rooms[data.room_id]) {
                 rooms[data.room_id] = new Set();
@@ -90,6 +166,10 @@ wss.on('connection', (ws, req) => {
                     members: members.map(m => ({ id: m.id, name: m.name, role: m.role })),
                     chat: [],
                     online_count: members.length,
+                    security: {
+                        hasPassword: !!roomSecurity[data.room_id]?.passwordHash,
+                        locked: roomSecurity[data.room_id]?.locked || false,
+                    },
                     currentMode: roomModes[data.room_id].mode,
                     whiteboard: roomModes[data.room_id].whiteboard,
                 }
@@ -259,6 +339,118 @@ wss.on('connection', (ws, req) => {
                 });
                 break;
 
+            // ═══ 🔒 امنیت اتاق ═══
+            case 'set_room_password':
+                if (clientInfo.role !== 'teacher') {
+                    console.warn(`⚠️ ${clientInfo.name} tried to set password but is not teacher`);
+                    break;
+                }
+                if (!data.password || data.password.length < 4) {
+                    ws.send(JSON.stringify({
+                        type: 'security_error',
+                        message: 'رمز باید حداقل ۴ کاراکتر باشد',
+                    }));
+                    break;
+                }
+                if (data.password.length > 8) {
+                    ws.send(JSON.stringify({
+                        type: 'security_error',
+                        message: 'رمز نباید بیشتر از ۸ کاراکتر باشد',
+                    }));
+                    break;
+                }
+                
+                roomSecurity[clientInfo.room].passwordHash = hashPassword(data.password);
+                roomSecurity[clientInfo.room].createdBy = clientInfo.id;
+                
+                console.log(`🔐 ${clientInfo.name} set password for ${clientInfo.room}`);
+                
+                // اطلاع به همه (رمز را نمی‌فرستیم!)
+                members.forEach(m => {
+                    m.ws.send(JSON.stringify({
+                        type: 'security_update',
+                        security: {
+                            hasPassword: true,
+                            locked: roomSecurity[clientInfo.room].locked,
+                        },
+                        by: clientInfo.name,
+                    }));
+                });
+                break;
+
+            case 'remove_room_password':
+                if (clientInfo.role !== 'teacher') break;
+                
+                roomSecurity[clientInfo.room].passwordHash = null;
+                console.log(`🔓 ${clientInfo.name} removed password`);
+                
+                members.forEach(m => {
+                    m.ws.send(JSON.stringify({
+                        type: 'security_update',
+                        security: {
+                            hasPassword: false,
+                            locked: roomSecurity[clientInfo.room].locked,
+                        },
+                        by: clientInfo.name,
+                    }));
+                });
+                break;
+
+            case 'lock_room':
+                if (clientInfo.role !== 'teacher') break;
+                
+                roomSecurity[clientInfo.room].locked = true;
+                console.log(`🔒 ${clientInfo.name} locked room`);
+                
+                members.forEach(m => {
+                    m.ws.send(JSON.stringify({
+                        type: 'security_update',
+                        security: {
+                            hasPassword: !!roomSecurity[clientInfo.room].passwordHash,
+                            locked: true,
+                        },
+                        by: clientInfo.name,
+                    }));
+                });
+                break;
+
+            case 'unlock_room':
+                if (clientInfo.role !== 'teacher') break;
+                
+                roomSecurity[clientInfo.room].locked = false;
+                console.log(`🔓 ${clientInfo.name} unlocked room`);
+                
+                members.forEach(m => {
+                    m.ws.send(JSON.stringify({
+                        type: 'security_update',
+                        security: {
+                            hasPassword: !!roomSecurity[clientInfo.room].passwordHash,
+                            locked: false,
+                        },
+                        by: clientInfo.name,
+                    }));
+                });
+                break;
+
+            // ═══ 🚪 خروج کاربر (قبل از قطع اتصال) ═══
+            case 'user_leaving':
+                console.log(`👋 ${clientInfo.name} is leaving...`);
+                
+                // اگر معلم است، چک کن
+                if (clientInfo.role === 'teacher') {
+                    // حذف از اتاق
+                    rooms[clientInfo.room].delete(clientInfo);
+                    
+                    // چک کن آیا معلم دیگری هست
+                    checkRoomForTeacher(clientInfo.room);
+                }
+                break;
+
+            // ═══ 🌐 چک اتصال (Keep-Alive) ═══
+            case 'check_connection':
+                ws.send(JSON.stringify({ type: 'connection_ok' }));
+                break;
+
             case 'ping':
                 ws.send(JSON.stringify({ type: 'pong' }));
                 break;
@@ -282,12 +474,24 @@ wss.on('connection', (ws, req) => {
             });
 
             broadcastMembers(clientInfo.room);
+            
+            // ⭐ NEW: چک معلم
+            if (clientInfo.role === 'teacher') {
+                checkRoomForTeacher(clientInfo.room);
+            }
 
             if (rooms[clientInfo.room].size === 0) {
                 console.log(`🗑️ Room ${clientInfo.room} is empty, cleaning`);
                 delete rooms[clientInfo.room];
                 delete roomModes[clientInfo.room];
                 delete roomWhiteboards[clientInfo.room];
+                delete roomSecurity[clientInfo.room];
+                
+                // ⭐ NEW: پاک کردن تایمر
+                if (roomEndTimers[clientInfo.room]) {
+                    clearTimeout(roomEndTimers[clientInfo.room]);
+                    delete roomEndTimers[clientInfo.room];
+                }
             }
         }
     });
@@ -309,6 +513,98 @@ function broadcastMembers(roomId) {
             online_count: members.length,
         }));
     });
+}
+
+// ═══════════════════════════════════════════
+//              Hash Password
+// ═══════════════════════════════════════════
+function hashPassword(password) {
+    const crypto = require('crypto');
+    return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+// ═══════════════════════════════════════════
+//              Check Room for Teacher
+// ═══════════════════════════════════════════
+function checkRoomForTeacher(roomId) {
+    if (!rooms[roomId]) return;
+    
+    const members = [...rooms[roomId]];
+    const hasTeacher = members.some(m => m.role === 'teacher');
+    
+    if (!hasTeacher && members.length > 0) {
+        // هیچ معلمی نیست — تایمر ۱۰ ثانیه
+        if (!roomEndTimers[roomId]) {
+            console.log(`⏱️ No teacher in "${roomId}" — starting 10s timer`);
+            
+            roomEndTimers[roomId] = setTimeout(() => {
+                // چک دوباره
+                const currentMembers = [...(rooms[roomId] || [])];
+                const stillNoTeacher = !currentMembers.some(m => m.role === 'teacher');
+                
+                if (stillNoTeacher && currentMembers.length > 0) {
+                    // ⭐ پایان کلاس
+                    console.log(`🔴 Ending class "${roomId}" — no teacher after 10s`);
+                    
+                    currentMembers.forEach(m => {
+                        try {
+                            m.ws.send(JSON.stringify({
+                                type: 'class_ended',
+                                reason: 'teacher_left',
+                                message: 'معلم از کلاس خارج شد',
+                                delaySeconds: 5,
+                            }));
+                        } catch (e) {}
+                    });
+                    
+                    // ⭐ پاک کردن رمز اتاق (طبق درخواست)
+                    if (roomSecurity[roomId]) {
+                        roomSecurity[roomId] = {
+                            passwordHash: null,
+                            locked: false,
+                            createdBy: null,
+                        };
+                        console.log(`🔓 Password cleared for "${roomId}"`);
+                    }
+                    
+                    // ⭐ بستن همه اتصالات بعد از ۵ ثانیه
+                    setTimeout(() => {
+                        const finalMembers = [...(rooms[roomId] || [])];
+                        finalMembers.forEach(m => {
+                            try { m.ws.close(1000, 'Class ended'); } catch (e) {}
+                        });
+                        
+                        // پاک کردن اتاق
+                        delete rooms[roomId];
+                        delete roomModes[roomId];
+                        delete roomWhiteboards[roomId];
+                        delete roomSecurity[roomId];
+                        delete roomEndTimers[roomId];
+                        
+                        console.log(`🗑️ Room "${roomId}" cleaned up`);
+                    }, 5000);
+                }
+                
+                delete roomEndTimers[roomId];
+            }, 10000);  // ۱۰ ثانیه
+        }
+    } else if (hasTeacher) {
+        // معلم برگشت — لغو تایمر
+        if (roomEndTimers[roomId]) {
+            clearTimeout(roomEndTimers[roomId]);
+            delete roomEndTimers[roomId];
+            console.log(`✅ Teacher returned to "${roomId}" — timer cancelled`);
+            
+            // اطلاع به همه
+            members.forEach(m => {
+                try {
+                    m.ws.send(JSON.stringify({
+                        type: 'teacher_returned',
+                    }));
+                } catch (e) {}
+            });
+        }
+    }
 }
 
 server.listen(PORT, () => {
